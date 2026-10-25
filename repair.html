@@ -155,7 +155,8 @@
     </div>
 
     <script>
-        const gasWebAppUrl = "https://script.google.com/macros/s/AKfycbx-tOKJabbtssGnG3IiorYDOlHqBOv3Q8LhdUF_UmBn2JVcWVV99oM0DOBSh7EZEFNO/exec"/exec"; 
+        // แก้ไข URL ให้ถูกต้องเรียบร้อยแล้ว
+        const gasWebAppUrl = "https://script.google.com/macros/s/AKfycbx-tOKJabbtssGnG3IiorYDOlHqBOv3Q8LhdUF_UmBn2JVcWVV99oM0DOBSh7EZEFNO/exec"; 
         const targetGroupId = "C1eb35ecfdad43ecf42065fe8539d93a6";
 
         function sendLineNotification(ticketData) {
@@ -174,7 +175,6 @@
                 `----------------------------------\n` +
                 `👉 **คลิกเพื่อดูและจัดการใบงานทันที:**\n${directLink}`;
 
-            // 1. แจ้งเตือนเข้า LINE กลุ่ม
             fetch(gasWebAppUrl, {
                 method: "POST",
                 mode: "no-cors",
@@ -186,7 +186,6 @@
                 })
             }).catch(error => console.error("LINE Error:", error));
 
-            // 2. บันทึกลง Google Sheets
             fetch(gasWebAppUrl, {
                 method: "POST",
                 mode: "no-cors",
