@@ -13,18 +13,20 @@
         .sub-desc { color: #64748b; font-size: 14px; margin-bottom: 20px; }
         
         .status-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-        .tab-btn { flex: 1; min-width: 110px; padding: 10px 8px; border-radius: 12px; font-size: 13px; font-weight: bold; border: 2px solid #cbd5e1; background: #ffffff; color: #64748b; cursor: pointer; text-align: center; transition: all 0.2s; }
+        .tab-btn { flex: 1; min-width: 100px; padding: 10px 8px; border-radius: 12px; font-size: 13px; font-weight: bold; border: 2px solid #cbd5e1; background: #ffffff; color: #64748b; cursor: pointer; text-align: center; transition: all 0.2s; }
         .tab-btn.active-all { background: #1e293b; color: white; border-color: #1e293b; }
         .tab-btn.active-pending { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
         .tab-btn.active-progress { background: #fef08a; color: #854d0e; border-color: #fde047; }
         .tab-btn.active-waiting { background: #ffedd5; color: #c2410c; border-color: #fdba74; }
         .tab-btn.active-completed { background: #dcfce7; color: #166534; border-color: #86efac; }
+        .tab-btn.active-cancelled { background: #f1f5f9; color: #475569; border-color: #94a3b8; }
         .tab-count { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 10px; font-size: 11px; }
 
         .filter-box { background: #f8fafc; border: 1px solid #cbd5e1; padding: 15px 20px; border-radius: 16px; margin-bottom: 25px; display: flex; gap: 15px; flex-wrap: wrap; }
         .filter-group { flex: 1; min-width: 220px; }
         .filter-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
         .filter-group input { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; outline: none; background: #fff; }
+        
         .ticket-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; margin-bottom: 15px; }
         .ticket-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px dashed #cbd5e1; padding-bottom: 10px; margin-bottom: 12px; }
         .ticket-id { font-size: 18px; font-weight: bold; color: #15803d; }
@@ -35,6 +37,7 @@
         .ticket-image-container { margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
         .ticket-image-container img { max-width: 150px; max-height: 150px; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer; }
         .repair-result-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 12px 15px; margin-top: 12px; font-size: 13.5px; }
+        
         .tech-actions { margin-top: 15px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .action-btns { display: flex; gap: 8px; flex-wrap: wrap; }
         .btn-status { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; border: 1px solid transparent; }
@@ -43,11 +46,13 @@
         .btn-print { background: #0284c7; color: white; }
         .btn-cancel { background: #ffedd5; color: #c2410c; border: 1px solid #fdba74; }
         .btn-delete { background: #fee2e2; color: #dc2626; }
+
         .btn-group { display: flex; gap: 12px; margin-top: 25px; flex-wrap: wrap; }
         .btn { flex: 1; min-width: 140px; padding: 12px; border-radius: 12px; font-size: 15px; font-weight: bold; text-align: center; text-decoration: none; cursor: pointer; border: none; }
         .btn-primary { background: #22c55e; color: white; }
         .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
         .empty-state { text-align: center; color: #94a3b8; padding: 30px 0; font-size: 15px; }
+
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .form-modal-box { background: white; width: 95%; max-width: 550px; border-radius: 20px; padding: 25px; max-height: 90vh; overflow-y: auto; text-align: left; }
@@ -78,10 +83,11 @@
 
         <div class="status-tabs">
             <button class="tab-btn active-all" id="tabAll" onclick="selectStatusTab('ALL')">📋 ทั้งหมด <span class="tab-count" id="countAll">0</span></button>
-            <button class="tab-btn" id="tabPending" onclick="selectStatusTab('PENDING')">🔴 ยังไม่รับ <span class="tab-count" id="countPending">0</span></button>
+            <button class="tab-btn" id="tabPending" onclick="selectStatusTab('PENDING')">🔴 รอดำเนินการ <span class="tab-count" id="countPending">0</span></button>
             <button class="tab-btn" id="tabProgress" onclick="selectStatusTab('PROGRESS')">🟡 กำลังซ่อม <span class="tab-count" id="countProgress">0</span></button>
             <button class="tab-btn" id="tabWaiting" onclick="selectStatusTab('WAITING')">🟠 รออะไหล่ <span class="tab-count" id="countWaiting">0</span></button>
             <button class="tab-btn" id="tabCompleted" onclick="selectStatusTab('COMPLETED')">🟢 ซ่อมเสร็จ <span class="tab-count" id="countCompleted">0</span></button>
+            <button class="tab-btn" id="tabCancelled" onclick="selectStatusTab('CANCELLED')">❌ ยกเลิก <span class="tab-count" id="countCancelled">0</span></button>
         </div>
 
         <div class="filter-box">
@@ -166,23 +172,6 @@
         let tickets = [];
         let currentTabFilter = 'ALL';
 
-        // ฟังก์ชันยกเลิกใบงาน (ยิง GET ไปอัปเดตชีสแน่นอน 100%)
-        function cancelRepairOrder(rowId) {
-            if (confirm("คุณต้องการยกเลิกใบงานเลขที่ " + rowId + " ใช่ไหม?")) {
-                var updateUrl = gasWebAppUrl + "?action=cancel&id=" + encodeURIComponent(rowId) + "&status=" + encodeURIComponent("❌ ยกเลิก (Cancelled)");
-                
-                fetch(updateUrl)
-                    .then(() => {
-                        alert("อัปเดตสถานะเป็น 'ยกเลิก' เรียบร้อยแล้ว!");
-                        location.reload();
-                    })
-                    .catch(() => {
-                        alert("อัปเดตสถานะเรียบร้อย");
-                        location.reload();
-                    });
-            }
-        }
-
         function loadTickets() {
             let saved = localStorage.getItem('repairTickets');
             tickets = saved ? JSON.parse(saved) : [];
@@ -207,10 +196,12 @@
         });
 
         function updateTabCounts() {
-            let pending = 0, progress = 0, waiting = 0, completed = 0;
+            let pending = 0, progress = 0, waiting = 0, completed = 0, cancelled = 0;
             tickets.forEach(t => {
                 let st = (t.status || "").toLowerCase();
-                if (st.includes('รอ') && (st.includes('อะไหล่') || st.includes('จัดซื้อ'))) {
+                if (st.includes('ยกเลิก') || st.includes('cancelled')) {
+                    cancelled++;
+                } else if (st.includes('รอ') && (st.includes('อะไหล่') || st.includes('จัดซื้อ'))) {
                     waiting++;
                 } else if (st.includes('กำลัง') || st.includes('progress')) {
                     progress++;
@@ -225,11 +216,12 @@
             document.getElementById('countProgress').innerText = progress;
             document.getElementById('countWaiting').innerText = waiting;
             document.getElementById('countCompleted').innerText = completed;
+            document.getElementById('countCancelled').innerText = cancelled;
         }
 
         function selectStatusTab(tabType) {
             currentTabFilter = tabType;
-            ['All', 'Pending', 'Progress', 'Waiting', 'Completed'].forEach(t => {
+            ['All', 'Pending', 'Progress', 'Waiting', 'Completed', 'Cancelled'].forEach(t => {
                 let btn = document.getElementById('tab' + t);
                 if(btn) btn.className = 'tab-btn';
             });
@@ -238,7 +230,47 @@
             if (tabType === 'PROGRESS') document.getElementById('tabProgress').className = 'tab-btn active-progress';
             if (tabType === 'WAITING') document.getElementById('tabWaiting').className = 'tab-btn active-waiting';
             if (tabType === 'COMPLETED') document.getElementById('tabCompleted').className = 'tab-btn active-completed';
+            if (tabType === 'CANCELLED') document.getElementById('tabCancelled').className = 'tab-btn active-cancelled';
             filterTickets();
+        }
+
+        function cancelRepairOrder(id) {
+            if (confirm("⚠️ คุณต้องการยกเลิกใบงานเลขที่ " + id + " ใช่หรือไม่?")) {
+                let targetTicket = null;
+                tickets = tickets.map(t => {
+                    if (t.ticketId === id) {
+                        t.status = "❌ ยกเลิกใบงาน (Cancelled)";
+                        targetTicket = t;
+                    }
+                    return t;
+                });
+
+                localStorage.setItem('repairTickets', JSON.stringify(tickets));
+                filterTickets();
+
+                // ส่งคำสั่งอัปเดตสถานะไปที่ Google Sheets ทันที
+                var updateSheetUrl = gasWebAppUrl + "?action=updateStatus&id=" + encodeURIComponent(id) + "&status=" + encodeURIComponent("❌ ยกเลิกใบงาน (Cancelled)");
+                fetch(updateSheetUrl).catch(err => console.error("Sheet Update Error:", err));
+
+                // ส่งแจ้งเตือนเข้ากลุ่ม LINE
+                if (targetTicket) {
+                    const msg = `❌ **[ยกเลิกใบงานซ่อม]**\n` +
+                                `----------------------------------\n` +
+                                `🎫 **เลขที่ใบงาน:** ${targetTicket.ticketId}\n` +
+                                `⚙️ **เครื่องจักร:** ${targetTicket.machine}\n` +
+                                `📌 **สถานะ:** ยกเลิกใบงานเรียบร้อยแล้ว\n` +
+                                `----------------------------------`;
+
+                    fetch(gasWebAppUrl, {
+                        method: "POST",
+                        mode: "no-cors",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: "sendGroupMessage", groupId: targetGroupId, message: msg })
+                    }).catch(err => console.error("LINE Error:", err));
+                }
+
+                alert("✅ ยกเลิกใบงานเรียบร้อยแล้ว!");
+            }
         }
 
         function renderTickets(dataToRender) {
@@ -276,7 +308,7 @@
                                     <button class="btn-status btn-progress" onclick="updateStatus('${t.ticketId}', '🟡 กำลังดำเนินการซ่อม (In Progress)')">🟡 รับซ่อม</button>
                                     <button class="btn-status btn-close-job" onclick="openCloseJobModal('${t.ticketId}')">📝 บันทึกผล/ปิดงาน</button>
                                     <button class="btn-status btn-print" onclick="printJobCard('${t.ticketId}')">🖨️ พิมพ์</button>
-                                    <button class="btn-status btn-cancel" onclick="cancelRepairOrder('${t.ticketId}')">❌ ยกเลิก</button>
+                                    <button class="btn-status btn-cancel" onclick="cancelRepairOrder('${t.ticketId}')">❌ ยกเลิกใบงาน</button>
                                     <button class="btn-status btn-delete" onclick="deleteTicket('${t.ticketId}')">🗑️ ลบ</button>
                                 </div>
                             </div>
@@ -395,7 +427,6 @@
             closeCloseJobModal();
             filterTickets();
 
-            // ส่ง GET ไปอัปเดตสถานะใน Google Sheets (อัปเดตชัวร์ 100%)
             var updateSheetUrl = gasWebAppUrl + "?action=updateStatus&id=" + encodeURIComponent(id) + "&status=" + encodeURIComponent(closeStatus);
             fetch(updateSheetUrl).catch(err => console.error("Sheet Update Error:", err));
 
@@ -428,7 +459,6 @@
             localStorage.setItem('repairTickets', JSON.stringify(tickets));
             filterTickets();
 
-            // ส่ง GET ไปอัปเดตสถานะใน Google Sheets (อัปเดตชัวร์ 100%)
             var updateSheetUrl = gasWebAppUrl + "?action=updateStatus&id=" + encodeURIComponent(id) + "&status=" + encodeURIComponent(newSt);
             fetch(updateSheetUrl).catch(err => console.error("Sheet Update Error:", err));
 
@@ -460,11 +490,12 @@
                 let st = (t.status || "").toLowerCase();
                 let matchTab = true;
                 if (currentTabFilter === 'PENDING') {
-                    matchTab = !st.includes('กำลัง') && !st.includes('progress') && !st.includes('รออะไหล่') && !st.includes('waiting') && !st.includes('เสร็จ') && !st.includes('completed');
+                    matchTab = !st.includes('กำลัง') && !st.includes('progress') && !st.includes('รออะไหล่') && !st.includes('waiting') && !st.includes('เสร็จ') && !st.includes('completed') && !st.includes('ยกเลิก');
                 }
                 if (currentTabFilter === 'PROGRESS') matchTab = st.includes('กำลัง') || st.includes('progress');
                 if (currentTabFilter === 'WAITING') matchTab = st.includes('รออะไหล่') || st.includes('waiting') || st.includes('จัดซื้อ');
                 if (currentTabFilter === 'COMPLETED') matchTab = st.includes('เสร็จ') || st.includes('completed');
+                if (currentTabFilter === 'CANCELLED') matchTab = st.includes('ยกเลิก') || st.includes('cancelled');
 
                 return matchKeyword && matchDate && matchTab;
             });
