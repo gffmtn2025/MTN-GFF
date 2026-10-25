@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green Food Factory - หน้าหลัก</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            margin: 0;
+            padding: 0;
+            color: #1e293b;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* --- 🌿 ลูกเล่นไอคอนผักลอยได้แก้ความโล่งด้านข้าง --- */
+        .floating-icon {
+            position: absolute;
+            font-size: 36px;
+            opacity: 0.35;
+            animation: floatAnim 6s infinite alternate ease-in-out;
+            z-index: 1;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        @keyframes floatAnim {
+            0% { transform: translateY(0px) rotate(0deg); }
+            100% { transform: translateY(-20px) rotate(10deg); }
+        }
+
+        /* กำหนดตำแหน่งกระจายไว้ซ้าย-ขวา */
+        .icon-1 { top: 15%; left: 10%; animation-delay: 0s; }
+        .icon-2 { top: 70%; left: 8%; animation-delay: 1s; font-size: 45px; }
+        .icon-3 { top: 25%; right: 12%; animation-delay: 2s; font-size: 40px; }
+        .icon-4 { top: 75%; right: 10%; animation-delay: 1.5s; }
+
+        /* --- 1. หน้าจออินโทรบัวรดน้ำ --- */
+        .intro-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)), 
+                        url('https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1600&q=80');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: transform 0.9s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.8s ease;
+            overflow: hidden;
+        }
+
+        .watering-container {
+            position: relative;
+            cursor: pointer;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 35px 50px;
+            border-radius: 30px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .watering-container:hover {
+            transform: scale(1.05);
+        }
+
+        .watering-can {
+            font-size: 70px;
+            margin-bottom: 15px;
+            display: inline-block;
+            transition: transform 0.4s ease;
+        }
+
+        .watering-container.pouring .watering-can {
+            transform: rotate(-35deg) translate(-10px, 5px);
+        }
+
+        .intro-title {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .intro-subtitle {
+            color: #e2e8f0;
+            font-size: 16px;
+            font-weight: 400;
+        }
+
+        .intro-overlay.hidden {
+            transform: translateY(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* --- 2. เนื้อหาหลักของหน้าเว็บ --- */
+        .wrapper {
+            padding: 50px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            position: relative;
+            z-index: 2;
+        }
+
+        .container {
+            max-width: 700px;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            padding: 45px 40px;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(22, 101, 52, 0.12);
+            border: 2px solid #bbf7d0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(90deg, #22c55e, #16a34a, #15803d);
+        }
+
+        .brand-badge {
+            display: inline-block;
+            background-color: #dcfce7;
+            color: #15803d;
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            color: #166534;
+            font-size: 34px;
+            margin: 0 0 10px 0;
+        }
+
+        .subtitle {
+            color: #475569;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .menu-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            color: #1e293b;
+            text-decoration: none;
+            padding: 20px 25px;
+            border-radius: 16px;
+            font-size: 18px;
+            font-weight: 600;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+            transition: all 0.3s ease;
+        }
+
+        .menu-card.active {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            border-color: #16a34a;
+            box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
+        }
+
+        .menu-card.active:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 25px rgba(34, 197, 94, 0.4);
+            background: linear-gradient(135deg, #16a34a, #15803d);
+        }
+
+        .menu-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .menu-icon {
+            font-size: 32px;
+            margin-right: 18px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .menu-card.disabled {
+            background: #f8fafc;
+            color: #94a3b8;
+            border-color: #e2e8f0;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .menu-card.disabled .menu-icon {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        .arrow-icon {
+            font-size: 20px;
+            font-weight: bold;
+            opacity: 0.8;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid #e2e8f0;
+            margin: 25px 0;
+        }
+
+        .footer-note {
+            margin-top: 35px;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 🌿 ไอคอนผักลอยได้ประดับด้านข้างแก้ความโล่ง -->
+    <div class="floating-icon icon-1">🥬</div>
+    <div class="floating-icon icon-2">🥗</div>
+    <div class="floating-icon icon-3">🌱</div>
+    <div class="floating-icon icon-4">🌿</div>
+
+    <!-- 🌿 หน้าจออินโทรบัวรดน้ำ -->
+    <div id="introOverlay" class="intro-overlay">
+        <div class="watering-container" id="waterBtn" onclick="startWatering()">
+            <div class="watering-can">🚿</div>
+            <div class="intro-title">Green Food Factory</div>
+            <div class="intro-subtitle">🌱 คลิกที่บัวรดน้ำเพื่อเปิดระบบและเข้าสู่ฟาร์ม</div>
+        </div>
+    </div>
+
+    <!-- 🥬 เนื้อหาหลักของหน้าเว็บ -->
+    <div class="wrapper">
+        <div class="container">
+            <span class="brand-badge">🥬 Green Food Factory </span>
+            <h1>ระบบบริหารจัดการโรงงาน</h1>
+            <p class="subtitle">Maintenance</p>
+            
+            <hr>
+
+            <div style="text-align: left; font-weight: bold; color: #334155; margin-bottom: 10px;">
+                📋 เมนูระบบงานหลัก :
+            </div>
+
+            <div class="features-grid">
+                <a href="repair.html" class="menu-card active">
+                    <div class="menu-left">
+                        <span class="menu-icon">🔧</span>
+                        <div>
+                            <div style="font-size: 18px;">ระบบแจ้งซ่อมเครื่องจักร</div>
+                            <div style="font-size: 13px; font-weight: normal; opacity: 0.9;">แจ้งปัญหาเครื่องขัดข้อง</div>
+                        </div>
+                    </div>
+                    <span class="arrow-icon">➔</span>
+                </a>
+                    <!--
+                <div class="menu-card disabled">
+                    <div class="menu-left">
+                        <span class="menu-icon">📦</span>
+                        <div>
+                            
+                            <div style="font-size: 18px;">ระบบคลังวัตถุดิบ & ผักสด</div>
+                            <div style="font-size: 13px; font-weight: normal;">กำลังพัฒนา (เร็วๆ นี้)</div>
+                        -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-note">
+                © Green Food Factory Maintenance System — Organic & Fresh Quality
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function startWatering() {
+            const overlay = document.getElementById('introOverlay');
+            const btn = document.getElementById('waterBtn');
+            
+            btn.classList.add('pouring');
+
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+            }, 600);
+        }
+    </script>
+
+</body>
+</html>

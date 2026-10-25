@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance GFF - แจ้งซ่อมออนไลน์</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #e2e8f0 100%);
+            margin: 0; padding: 0; color: #1e293b; min-height: 100vh; position: relative; overflow-x: hidden;
+        }
+        .tool-icon { position: absolute; font-size: 38px; opacity: 0.25; animation: toolFloat 7s infinite alternate ease-in-out; z-index: 1; user-select: none; pointer-events: none; }
+        @keyframes toolFloat { 0% { transform: translateY(0px) rotate(0deg); } 100% { transform: translateY(-25px) rotate(20deg); } }
+        .tool-1 { top: 12%; left: 7%; animation-delay: 0s; font-size: 45px; }
+        .tool-2 { top: 75%; left: 5%; animation-delay: 1.5s; font-size: 40px; }
+        .tool-3 { top: 18%; right: 8%; animation-delay: 2.5s; font-size: 42px; }
+        .tool-4 { top: 70%; right: 7%; animation-delay: 1s; font-size: 48px; }
+
+        .mechanic-mascot { position: fixed; bottom: 20px; left: 3%; height: 380px; z-index: 3; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.15)); pointer-events: none; transition: all 0.3s ease; }
+        @media (max-width: 1024px) { .mechanic-mascot { height: 280px; left: 1%; } }
+        @media (max-width: 768px) { .mechanic-mascot { display: none; } }
+
+        .top-nav { padding: 20px 30px; position: relative; z-index: 10; display: flex; gap: 10px; }
+        .back-btn { display: inline-flex; align-items: center; color: #15803d; text-decoration: none; font-weight: 600; font-size: 15px; background-color: rgba(255, 255, 255, 0.9); padding: 8px 18px; border-radius: 20px; border: 1px solid #bbf7d0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: all 0.2s ease; cursor: pointer; }
+        .back-btn:hover { background-color: #22c55e; color: white; transform: translateX(-4px); }
+
+        .wrapper { padding: 10px 20px 80px 20px; display: flex; flex-direction: column; align-items: center; position: relative; z-index: 2; }
+        .header-section { text-align: center; margin-bottom: 25px; }
+        .brand-tag { display: inline-block; background: #dcfce7; color: #15803d; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; margin-bottom: 10px; border: 1px solid #86efac; }
+        h1 { color: #166534; font-size: 34px; margin: 0 0 8px 0; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .dept-title { color: #334155; font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+        .sub-desc { color: #64748b; font-size: 14px; }
+
+        .form-card { max-width: 550px; width: 100%; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 35px 30px; border-radius: 24px; box-shadow: 0 15px 35px rgba(15, 23, 42, 0.08); border: 2px solid #bbf7d0; }
+        .form-title-badge { text-align: center; font-size: 20px; font-weight: bold; color: #166534; margin-bottom: 25px; padding-bottom: 12px; border-bottom: 2px dashed #e2e8f0; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; font-weight: 600; color: #334155; margin-bottom: 8px; font-size: 14px; }
+        select, input[type="text"], textarea, input[type="file"] { width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 15px; color: #1e293b; background-color: #f8fafc; transition: all 0.25s ease; outline: none; }
+        select:focus, input[type="text"]:focus, textarea:focus, input[type="file"]:focus { border-color: #22c55e; background-color: #ffffff; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15); }
+
+        .submit-btn { width: 100%; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; border: none; padding: 15px; border-radius: 14px; font-size: 17px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3); transition: all 0.3s ease; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .submit-btn:hover { background: linear-gradient(135deg, #16a34a, #15803d); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4); }
+
+        #lineToast { position: fixed; bottom: 25px; right: 25px; background: #06c755; color: white; padding: 15px 20px; border-radius: 14px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 10000; display: flex; align-items: center; gap: 12px; transform: translateY(120px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 600; }
+        #lineToast.show { transform: translateY(0); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.3s ease; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-box { background: white; padding: 35px 30px; border-radius: 24px; text-align: center; max-width: 420px; width: 90%; transform: scale(0.8); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .modal-overlay.active .modal-box { transform: scale(1); }
+        .success-icon { font-size: 60px; margin-bottom: 15px; }
+        .modal-title { font-size: 22px; font-weight: bold; color: #166534; margin-bottom: 10px; }
+        .modal-desc { font-size: 14px; color: #64748b; margin-bottom: 20px; line-height: 1.5; }
+        .modal-btn { background: #22c55e; color: white; border: none; padding: 12px 30px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        .modal-btn:hover { background: #16a34a; }
+    </style>
+</head>
+<body>
+
+    <div class="tool-icon tool-1">🔧</div>
+    <div class="tool-icon tool-2">⚙️</div>
+    <div class="tool-icon tool-3">🔩</div>
+    <div class="tool-icon tool-4">🛠️</div>
+
+    <img src="mechanic.png" alt="Mechanic Staff" class="mechanic-mascot">
+
+    <div class="top-nav">
+        <a href="index.html" class="back-btn">← กลับหน้าหลัก</a>
+        <a onclick="checkTechnicianPassword()" class="back-btn" style="background: #dcfce7; cursor: pointer;">🔐 สำหรับทีมช่าง (ดูประวัติ)</a>
+    </div>
+
+    <div class="wrapper">
+        <div class="header-section">
+            <span class="brand-tag">🥬 GREEN FOOD FACTORY</span>
+            <h1>🔧 Maintenance GFF</h1>
+            <div class="dept-title">แผนก ซ่อมบำรุง</div>
+            <div class="sub-desc">ระบบแจ้งซ่อมเครื่องจักรและอุปกรณ์ภายในโรงงาน</div>
+        </div>
+
+        <div class="form-card">
+            <div class="form-title-badge">
+                <span>📋</span> แบบฟอร์มแจ้งซ่อมออนไลน์
+            </div>
+
+            <form id="repairForm" onsubmit="submitRepairForm(event)">
+                <div class="form-group">
+                    <label for="zone">โซน :</label>
+                    <select id="zone" name="zone" required>
+                        <option value="">-- กรุณาเลือกโซน --</option>
+                        <option value="00012(ครัวกลาง)">00012(ครัวกลาง)</option>
+                        <option value="00026(น้ำสลัด)">00026(น้ำสลัด)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="room">ห้อง :</label>
+                    <select id="room" name="room" onchange="checkOtherRoom(this)" required>
+                        <option value="">-- กรุณาเลือกห้อง --</option>
+                        <option value="ห้องผลิต">ห้องผลิต</option>
+                        <option value="ห้องบรรจุ">ห้องบรรจุ</option>
+                        <option value="โซนแพ็ค">ห้องแพ็ค</option>
+                        <option value="other">อื่นๆ (โปรดระบุ)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="otherRoomGroup" style="display: none;">
+                    <label for="other_room">ระบุชื่อห้อง (อื่นๆ) :</label>
+                    <input type="text" id="other_room" name="other_room" placeholder="ระบุชื่อห้องของคุณที่นี่">
+                </div>
+
+                <div class="form-group">
+                    <label for="reporter">ผู้แจ้งซ่อม :</label>
+                    <input type="text" id="reporter" name="reporter" placeholder="ระบุชื่อ-นามสกุล / รหัสพนักงาน" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="machine">เครื่องจักร / อุปกรณ์ :</label>
+                    <input type="text" id="machine" name="machine" placeholder="เช่น เครื่องซีล, สายพานลำเลียง, ปั๊มน้ำ" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="details">รายละเอียดการเสีย :</label>
+                    <textarea id="details" name="details" rows="3" placeholder="เช่น เปิดไม่ติด, มีเสียงดังผิดปกติ, น้ำรั่วซึม" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="repairImage">📸 ถ่ายภาพอาการเสีย (เปิดกล้องทันที) :</label>
+                    <input type="file" id="repairImage" accept="image/*" capture="environment">
+                </div>
+
+                <button type="submit" class="submit-btn">
+                    <span>⚙️</span> ส่งข้อมูลแจ้งซ่อม
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="lineToast">
+        <span style="font-size: 24px;">💬</span>
+        <div>
+            <div style="font-size: 13px; opacity: 0.9;">LINE Notify แจ้งเตือนทีมช่างแล้ว!</div>
+            <div id="lineToastMsg" style="font-size: 14px; font-weight: bold;">ส่งใบงานสำเร็จ</div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="successModal">
+        <div class="modal-box">
+            <div class="success-icon">✅</div>
+            <div class="modal-title">ส่งข้อมูลแจ้งซ่อมสำเร็จ!</div>
+            <div class="modal-desc">ระบบได้บันทึกข้อมูลและส่งแจ้งเตือนทีมช่างเรียบร้อยแล้ว<br>กำลังพาท่านไปยังหน้าติดตามสถานะ...</div>
+            <button class="modal-btn" onclick="goToStatusPage()">ดูสถานะการแจ้งซ่อม</button>
+        </div>
+    </div>
+
+    <script>
+        const gasWebAppUrl = "https://script.google.com/macros/s/AKfycbx-tOKJabbtssGnG3IiorYDOlHqBOv3Q8LhdUF_UmBn2JVcWVV99oM0DOBSh7EZEFNO/exec"/exec"; 
+        const targetGroupId = "C1eb35ecfdad43ecf42065fe8539d93a6";
+
+        function sendLineNotification(ticketData) {
+            const currentBaseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+            const directLink = currentBaseUrl + 'history.html?id=' + ticketData.ticketId;
+
+            const messageText = 
+                `🚨 **[แจ้งซ่อมใหม่ - Green Food Factory]** 🚨\n` +
+                `----------------------------------\n` +
+                `🎫 เลขที่ใบแจ้ง: ${ticketData.ticketId}\n` +
+                `⏱️ เวลาแจ้ง: ${ticketData.timestamp}\n` +
+                `👤 ผู้แจ้ง: ${ticketData.reporterName}\n` +
+                `📍 โซนพื้นที่: ${ticketData.zone}\n` +
+                `⚙️ เครื่องจักร: ${ticketData.machine}\n` +
+                `📝 อาการเสีย: ${ticketData.details}\n` +
+                `----------------------------------\n` +
+                `👉 **คลิกเพื่อดูและจัดการใบงานทันที:**\n${directLink}`;
+
+            // 1. แจ้งเตือนเข้า LINE กลุ่ม
+            fetch(gasWebAppUrl, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "sendGroupMessage",
+                    groupId: targetGroupId,
+                    message: messageText
+                })
+            }).catch(error => console.error("LINE Error:", error));
+
+            // 2. บันทึกลง Google Sheets
+            fetch(gasWebAppUrl, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "saveJob",
+                    data: {
+                        ticketId: ticketData.ticketId,
+                        time: ticketData.timestamp,
+                        machine: ticketData.machine,
+                        details: ticketData.details,
+                        reporter: ticketData.reporterName,
+                        status: "🔴 รอดำเนินการซ่อม (Pending)"
+                    }
+                })
+            }).catch(error => console.error("Sheet Save Error:", error));
+        }
+
+        function checkOtherRoom(selectObj) {
+            const otherGroup = document.getElementById('otherRoomGroup');
+            const otherInput = document.getElementById('other_room');
+            if (selectObj.value === 'other') {
+                otherGroup.style.display = 'block';
+                otherInput.required = true;
+            } else {
+                otherGroup.style.display = 'none';
+                otherInput.required = false;
+                otherInput.value = '';
+            }
+        }
+
+        function checkTechnicianPassword() {
+            const correctPin = "GFF@2025"; 
+            let password = prompt("🔐 กรุณากรอกรหัสผ่านสำหรับทีมช่างซ่อมบำรุง:");
+            if (password === null) return;
+            if (password === correctPin) {
+                window.location.href = 'history.html';
+            } else {
+                alert("❌ รหัสผ่านไม่ถูกต้อง! เฉพาะทีมช่างซ่อมบำรุงเท่านั้น");
+            }
+        }
+
+        function submitRepairForm(e) {
+            e.preventDefault();
+
+            const zone = document.getElementById('zone').value;
+            let room = document.getElementById('room').value;
+            if (room === 'other') {
+                room = document.getElementById('other_room').value;
+            }
+            const reporter = document.getElementById('reporter').value;
+            const machine = document.getElementById('machine').value;
+            const details = document.getElementById('details').value;
+            const imageFile = document.getElementById('repairImage').files[0];
+
+            let tickets = JSON.parse(localStorage.getItem('repairTickets')) || [];
+
+            let maxIdNum = 0;
+            tickets.forEach(ticket => {
+                let numPart = parseInt(ticket.ticketId.replace('GFF-', '')) || 0;
+                if (numPart > maxIdNum) {
+                    maxIdNum = numPart;
+                }
+            });
+
+            let nextNumber = maxIdNum + 1;
+            const paddedId = String(nextNumber).padStart(4, '0');
+            const ticketId = 'GFF-' + paddedId;
+
+            const now = new Date();
+            const timeStr = now.toLocaleDateString('th-TH') + ' ' + now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+            if (imageFile) {
+                const reader = new FileReader();
+                reader.onload = function(uploadEvent) {
+                    const imageDataUrl = uploadEvent.target.result;
+                    saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, imageDataUrl);
+                };
+                reader.readAsDataURL(imageFile);
+            } else {
+                saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, null);
+            }
+        }
+
+        function saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, imageUrl) {
+            const ticketData = {
+                ticketId: ticketId,
+                zone: zone,
+                room: room ? room : '-',
+                reporter: reporter,
+                machine: machine,
+                details: details,
+                time: timeStr,
+                image: imageUrl,
+                status: '🔴 รอดำเนินการซ่อม (Pending)'
+            };
+
+            tickets.unshift(ticketData); 
+            localStorage.setItem('repairTickets', JSON.stringify(tickets));
+            localStorage.setItem('latestTicket', JSON.stringify(ticketData));
+
+            sendLineNotification({
+                ticketId: ticketId,
+                timestamp: timeStr,
+                reporterName: reporter,
+                zone: zone + (room ? ` (${room})` : ''),
+                machine: machine,
+                details: details
+            });
+
+            showLineToast(ticketId, machine);
+
+            document.getElementById('successModal').classList.add('active');
+            setTimeout(() => { goToStatusPage(); }, 2500);
+        }
+
+        function showLineToast(ticketId, machine) {
+            const toast = document.getElementById('lineToast');
+            document.getElementById('lineToastMsg').innerText = `[${ticketId}] แจ้งซ่อม: ${machine}`;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4000);
+        }
+
+        function goToStatusPage() {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
