@@ -135,7 +135,7 @@
     <div id="lineToast">
         <span style="font-size: 24px;">💬</span>
         <div>
-            <div style="font-size: 13px; opacity: 0.9;">LINE Notify แจ้งเตือนทีมช่างแล้ว!</div>
+            <div style="font-size: 13px; opacity: 0.9;">บันทึกข้อมูลและส่งแจ้งเตือนแล้ว!</div>
             <div id="lineToastMsg" style="font-size: 14px; font-weight: bold;">ส่งใบงานสำเร็จ</div>
         </div>
     </div>
@@ -151,53 +151,6 @@
 
     <script>
         const gasWebAppUrl = "https://script.google.com/macros/s/AKfycbx-tOKJabbtssGnG3IiorYDOlHqBOv3Q8LhdUF_UmBn2JVcWVV99oM0DOBSh7EZEFNO/exec"; 
-        const targetGroupId = "C1eb35ecfdad43ecf42065fe8539d93a6";
-
-        function sendLineNotification(ticketData) {
-            const currentBaseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
-            const directLink = currentBaseUrl + 'history.html?id=' + ticketData.ticketId;
-
-            const messageText = 
-                `🚨 **[แจ้งซ่อมใหม่ - Green Food Factory]** 🚨\n` +
-                `----------------------------------\n` +
-                `🎫 เลขที่ใบแจ้ง: ${ticketData.ticketId}\n` +
-                `⏱️ เวลาแจ้ง: ${ticketData.timestamp}\n` +
-                `👤 ผู้แจ้ง: ${ticketData.reporterName}\n` +
-                `📍 โซนพื้นที่: ${ticketData.zone}\n` +
-                `⚙️ เครื่องจักร: ${ticketData.machine}\n` +
-                `📝 อาการเสีย: ${ticketData.details}\n` +
-                `----------------------------------\n` +
-                `👉 **คลิกเพื่อดูและจัดการใบงานทันที:**\n${directLink}`;
-
-            // 1. ส่ง LINE แจ้งเตือนเข้ากลุ่ม
-            fetch(gasWebAppUrl, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    action: "sendGroupMessage",
-                    groupId: targetGroupId,
-                    message: messageText
-                })
-            }).catch(error => console.error("LINE Error:", error));
-
-            // 2. ส่งข้อมูลบันทึกลง Google Sheets
-            fetch(gasWebAppUrl, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    action: "saveJob",
-                    ticketId: ticketData.ticketId,
-                    time: ticketData.timestamp,
-                    reporter: ticketData.reporterName,
-                    zone: ticketData.zone,
-                    machine: ticketData.machine,
-                    details: ticketData.details,
-                    status: "🔴 รอดำเนินการซ่อม (Pending)"
-                })
-            }).catch(error => console.error("Sheet Save Error:", error));
-        }
 
         function checkOtherRoom(selectObj) {
             const otherGroup = document.getElementById('otherRoomGroup');
@@ -227,7 +180,7 @@
             e.preventDefault();
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
-            submitBtn.innerHTML = "⏳ กำลังส่งข้อมูล...";
+            submitBtn.innerHTML = "⏳ กำลังประมวลผลและส่งข้อมูล...";
 
             const zone = document.getElementById('zone').value;
             let room = document.getElementById('room').value;
@@ -261,7 +214,7 @@
             const now = new Date();
             const timeStr = now.toLocaleDateString('th-TH') + ' ' + now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
-            // เช็คว่าเลือกรูปภาพไว้ไหม
+            // ตรวจสอบและบีบอัดรูปภาพก่อนส่ง
             if (imageInput.files && imageInput.files[0]) {
                 const file = imageInput.files[0];
                 const reader = new FileReader();
@@ -296,16 +249,16 @@
                         saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, compressedDataUrl);
                     };
                     img.onerror = function() {
-                        saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, null);
+                        saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, "");
                     };
                     img.src = event.target.result;
                 };
                 reader.onerror = function() {
-                    saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, null);
+                    saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, "");
                 };
                 reader.readAsDataURL(file);
             } else {
-                saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, null);
+                saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, "");
             }
         }
 
@@ -322,12 +275,11 @@
                 status: '🔴 รอดำเนินการซ่อม (Pending)'
             };
 
-            // พยายามเก็บบันทึกลง LocalStorage (ถ้าเต็มจะทำการล้างแคชภาพแล้วเซฟใหม่)
+            // บันทึกลง LocalStorage เครื่องผู้ใช้งาน
             try {
                 tickets.unshift(ticketData);
-                // ตัดภาพในประวัติเก่าๆ ออกเพื่อประหยัดพื้นที่ LocalStorage ไม่ให้เต็ม
                 let cleanTickets = tickets.slice(0, 15).map((t, idx) => {
-                    if (idx > 2) t.image = null; // เก็บภาพเฉพาะ 3 ใบงานล่าสุด
+                    if (idx > 2) t.image = null; // เก็บภาพเฉพาะ 3 ใบงานล่าสุดเพื่อประหยัดพื้นที่เครื่อง
                     return t;
                 });
                 localStorage.setItem('repairTickets', JSON.stringify(cleanTickets));
@@ -336,20 +288,25 @@
                 try {
                     localStorage.clear();
                     localStorage.setItem('repairTickets', JSON.stringify([ticketData]));
-                } catch (e) {
-                    console.error("Storage error completely bypassed");
-                }
+                } catch (e) {}
             }
 
-            // ส่งข้อมูลแจ้งเตือนและลง Sheets ทันที
-            sendLineNotification({
-                ticketId: ticketId,
-                timestamp: timeStr,
-                reporterName: reporter,
-                zone: zone + (room ? ` (${room})` : ''),
-                machine: machine,
-                details: details
-            });
+            // 📤 ส่งข้อมูลไปที่ Google Apps Script เพื่อบันทึกลง Google Sheets และยิง LINE แจ้งเตือน
+            fetch(gasWebAppUrl, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "saveJob",
+                    ticketId: ticketId,
+                    time: timeStr,
+                    reporter: reporter,
+                    zone: zone + (room ? ` (${room})` : ''),
+                    machine: machine,
+                    details: details,
+                    image: imageUrl // 📸 ส่งรูปภาพ Base64 ไปบันทึกลงชีตด้วย
+                })
+            }).catch(error => console.error("Sheet Save Error:", error));
 
             showLineToast(ticketId, machine);
 
@@ -359,7 +316,7 @@
 
         function showLineToast(ticketId, machine) {
             const toast = document.getElementById('lineToast');
-            document.getElementById('lineToastMsg').innerText = `[${ticketId}] แจ้งซ่อม: ${machine}`;
+            document.getElementById('lineToastMsg').innerText = `[${ticketId}] ${machine}`;
             toast.classList.add('show');
             setTimeout(() => {
                 toast.classList.remove('show');
