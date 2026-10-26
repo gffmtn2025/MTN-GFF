@@ -180,12 +180,9 @@
             fetch(fetchUrl)
                 .then(response => response.json())
                 .then(data => {
-                    if (Array.isArray(data) && data.length > 0) {
+                    if (Array.isArray(data)) {
                         tickets = data;
                         try { localStorage.setItem('repairTickets', JSON.stringify(tickets)); } catch(e){}
-                    } else {
-                        let saved = localStorage.getItem('repairTickets');
-                        tickets = saved ? JSON.parse(saved) : [];
                     }
                     updateTabCounts();
                     checkUrlParamAndFilter();
@@ -294,6 +291,26 @@
 
                 alert("✅ ยกเลิกใบงานเรียบร้อยแล้ว!");
             }
+        }
+
+        function deleteTicket(id) {
+            if (!confirm("⚠️ ต้องการลบใบงานเลขที่ " + id + " นี้ออกจากระบบและ Google Sheets ถาวรใช่หรือไม่?")) return;
+            
+            // 1. ลบออกจากหน้าเว็บทันที
+            tickets = tickets.filter(t => t.ticketId !== id);
+            try {
+                localStorage.setItem('repairTickets', JSON.stringify(tickets));
+            } catch(e) {}
+            
+            filterTickets();
+
+            // 2. ส่งสัญญาณไปลบออกจาก Google Sheets แบบถาวร
+            const deleteUrl = gasWebAppUrl + "?action=deleteTicket&id=" + encodeURIComponent(id);
+            fetch(deleteUrl)
+                .then(() => console.log("Deleted from sheet successfully"))
+                .catch(err => console.error("Delete Error:", err));
+                
+            alert("🗑️ ลบใบงานเรียบร้อยแล้วครับ");
         }
 
         function renderTickets(dataToRender) {
@@ -487,12 +504,6 @@
             fetch(updateSheetUrl).catch(err => console.error("Sheet Update Error:", err));
 
             alert(`✅ อัปเดตสถานะเรียบร้อย`);
-        }
-
-        function deleteTicket(id) {
-            if (!confirm("⚠️ ต้องการลบใบงานนี้ใช่หรือไม่?")) return;
-            tickets = tickets.filter(t => t.ticketId !== id);
-            filterTickets();
         }
 
         function filterTickets() {
