@@ -183,13 +183,21 @@
             const urlParams = new URLSearchParams(window.location.search);
             const targetId = urlParams.get('id');
             if (targetId) {
+                // รอให้หน้าเว็บโหลดข้อมูลเสร็จก่อน ค่อยเอาเลขใบงานไปใส่ช่องค้นหาแล้วกดกรอง
                 setTimeout(() => {
                     const searchInput = document.getElementById('searchKeyword');
-                    if (searchInput) {
-                        searchInput.value = targetId;
-                        filterTickets();
+                    const tabAllBtn = document.getElementById('tabAll');
+                    
+                    // บังคับกดแท็บ "ทั้งหมด" ก่อนเพื่อให้เคลียร์ตัวกรองสถานะ
+                    if (tabAllBtn) {
+                        tabAllBtn.click();
                     }
-                }, 300);
+                    
+                    if (searchInput) {
+                        searchInput.value = targetId; // ใส่รหัสใบงาน เช่น GFF-0003 อัตโนมัติ
+                        filterTickets(); // สั่งกรองข้อมูลทันที
+                    }
+                }, 500); // หน่วงเวลา 0.5 วินาทีเพื่อให้ระบบดึงข้อมูลพร้อม
             } else {
                 filterTickets();
             }
