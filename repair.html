@@ -237,7 +237,7 @@
             const reporter = document.getElementById('reporter').value;
             const machine = document.getElementById('machine').value;
             const details = document.getElementById('details').value;
-            const imageFile = document.getElementById('repairImage').files[0];
+            const imageInput = document.getElementById('repairImage');
 
             let tickets = JSON.parse(localStorage.getItem('repairTickets')) || [];
 
@@ -256,46 +256,62 @@
             const now = new Date();
             const timeStr = now.toLocaleDateString('th-TH') + ' ' + now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
-            // 📸 ฟังก์ชันบีบอัดรูปภาพจากมือถืออัตโนมัติ ป้องกันเคสเครื่องค้างหรือส่งไม่ผ่าน
-            if (imageFile) {
+            // เช็คว่ามีการเลือกรูปหรือถ่ายรูปมาไหม
+            if (imageInput.files && imageInput.files[0]) {
+                const imageFile = imageInput.files[0];
                 const reader = new FileReader();
+                
                 reader.onload = function(uploadEvent) {
                     const img = new Image();
                     img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 800;  // จำกัดความกว้างสูงสุด
-                        const MAX_HEIGHT = 800; // จำกัดความสูงสูงสุด
-                        let width = img.width;
-                        let height = img.height;
+                        try {
+                            const canvas = document.createElement('canvas');
+                            const MAX_WIDTH = 600;  // ลดขนาดลงเพื่อให้ส่งผ่านมือถือได้ง่ายขึ้น
+                            const MAX_HEIGHT = 600;
+                            let width = img.width;
+                            let height = img.height;
 
-                        if (width > height) {
-                            if (width > MAX_WIDTH) {
-                                height *= MAX_WIDTH / width;
-                                width = MAX_WIDTH;
+                            if (width > height) {
+                                if (width > MAX_WIDTH) {
+                                    height *= MAX_WIDTH / width;
+                                    width = MAX_WIDTH;
+                                }
+                            } else {
+                                if (height > MAX_HEIGHT) {
+                                    width *= MAX_HEIGHT / height;
+                                    height = MAX_HEIGHT;
+                                }
                             }
-                        } else {
-                            if (height > MAX_HEIGHT) {
-                                width *= MAX_HEIGHT / height;
-                                height = MAX_HEIGHT;
-                            }
+
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+                            
+                            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                            saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, compressedDataUrl);
+                        } catch (canvasErr) {
+                            console.error("Canvas Error:", canvasErr);
+                            // ถ้าเกิดข้อผิดพลาดในการบีบอัด ให้บันทึกแบบไม่มีรูปแทน เพื่อให้ส่งงานได้ไม่ติดขัด
+                            saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, null);
                         }
-
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        // แปลงและบีบอัดเป็นไฟล์ JPEG คุณภาพ 0.7 (ไฟล์จะเล็กลงมาก ส่งไว ไม่ค้าง)
-                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                        saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, compressedDataUrl);
+                    };
+                    img.onerror = function() {
+                        // ถ้าไฟล์รูปมีปัญหา โหลดไม่ได้ ให้ข้ามไปบันทึกแบบไม่มีรูป
+                        saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, null);
                     };
                     img.src = uploadEvent.target.result;
                 };
+                reader.onerror = function() {
+                    saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, null);
+                };
                 reader.readAsDataURL(imageFile);
             } else {
+                // กรณีไม่ได้แนบรูปภาพ ส่งข้อมูลปกติทันที
                 saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, null);
             }
         }
+
         function saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, imageUrl) {
             const ticketData = {
                 ticketId: ticketId,
@@ -309,23 +325,27 @@
                 status: '🔴 รอดำเนินการซ่อม (Pending)'
             };
 
-            tickets.unshift(ticketData); 
-            localStorage.setItem('repairTickets', JSON.stringify(tickets));
-            localStorage.setItem('latestTicket', JSON.stringify(ticketData));
+            try {
+                tickets.unshift(ticketData); 
+                localStorage.setItem('repairTickets', JSON.stringify(tickets));
+                localStorage.setItem('latestTicket', JSON.stringify(ticketData));
 
-            sendLineNotification({
-                ticketId: ticketId,
-                timestamp: timeStr,
-                reporterName: reporter,
-                zone: zone + (room ? ` (${room})` : ''),
-                machine: machine,
-                details: details
-            });
+                sendLineNotification({
+                    ticketId: ticketId,
+                    timestamp: timeStr,
+                    reporterName: reporter,
+                    zone: zone + (room ? ` (${room})` : ''),
+                    machine: machine,
+                    details: details
+                });
 
-            showLineToast(ticketId, machine);
+                showLineToast(ticketId, machine);
 
-            document.getElementById('successModal').classList.add('active');
-            setTimeout(() => { goToStatusPage(); }, 2500);
+                document.getElementById('successModal').classList.add('active');
+                setTimeout(() => { goToStatusPage(); }, 2500);
+            } catch (err) {
+                alert("⚠️ เกิดข้อผิดพลาดในการบันทึกข้อมูล (หน่วยความจำในเครื่องอาจเต็ม): " + err.message);
+            }
         }
 
         function showLineToast(ticketId, machine) {
