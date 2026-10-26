@@ -34,8 +34,11 @@
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px; }
         .info-row { color: #475569; }
         .info-row span { font-weight: 600; color: #1e293b; }
-        .ticket-image-container { margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
-        .ticket-image-container img { max-width: 150px; max-height: 150px; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer; }
+        
+        .ticket-images-wrapper { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
+        .ticket-image-box { flex: 1; min-width: 140px; }
+        .ticket-image-box img { max-width: 100%; max-height: 140px; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer; object-fit: cover; }
+        
         .repair-result-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 12px 15px; margin-top: 12px; font-size: 13.5px; }
         
         .tech-actions { margin-top: 15px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
@@ -127,13 +130,14 @@
         <img id="modalImg" src="" style="max-width:90%; max-height:90vh; border-radius:12px; border:3px solid #fff;">
     </div>
 
+    <!-- Modal บันทึกรายละเอียดการซ่อม (เพิ่มช่องถ่ายรูปหลังซ่อม) -->
     <div class="modal-overlay" id="closeJobModal">
         <div class="form-modal-box">
             <div class="form-modal-header">
                 <span>🛠️ บันทึกรายละเอียดการซ่อม (<span id="closeTicketIdTitle">GFF-0000</span>)</span>
                 <span style="cursor: pointer; font-size: 20px;" onclick="closeCloseJobModal()">✖</span>
             </div>
-            <form onsubmit="saveCloseJobReport(event)">
+            <form id="closeJobForm" onsubmit="saveCloseJobReport(event)">
                 <input type="hidden" id="closeTicketId">
                 <div class="modal-form-group">
                     <label>👨‍🔧 ชื่อช่างผู้ซ่อมบำรุง:</label>
@@ -159,8 +163,15 @@
                     <label>📝 หมายเหตุเพิ่มเติม:</label>
                     <textarea id="techRemarks" rows="2" placeholder="หมายเหตุเพิ่มเติม"></textarea>
                 </div>
+                
+                <!-- 📌 เพิ่มช่องถ่ายภาพหลังซ่อมเพิ่มตรงนี้ตามคำขอ -->
+                <div class="modal-form-group" style="background: #f0fdf4; border: 1px dashed #22c55e; padding: 12px; border-radius: 12px;">
+                    <label style="color: #166534;">📸 ถ่ายภาพหลังซ่อม (After Repair) :</label>
+                    <input type="file" id="afterRepairImage" accept="image/*" capture="environment">
+                </div>
+
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button type="submit" class="btn btn-primary" style="flex: 2;">💾 บันทึก & ส่ง LINE</button>
+                    <button type="submit" class="btn btn-primary" id="saveCloseBtn" style="flex: 2;">💾 บันทึก & ส่ง LINE</button>
                     <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeCloseJobModal()">ยกเลิก</button>
                 </div>
             </form>
@@ -316,13 +327,17 @@
             if (dataToRender.length > 0) {
                 let html = '';
                 dataToRender.forEach(t => {
-                    let imageHtml = t.image && t.image !== "" ? `<div class="ticket-image-container"><div style="font-size:13px; font-weight:600; color:#64748b; margin-bottom:5px;">🖼️ รูปถ่ายอาการเสีย:</div><img src="${t.image}" onclick="document.getElementById('modalImg').src='${t.image}'; document.getElementById('imageModal').classList.add('active');"></div>` : '';
+                    let beforeImgHtml = t.image && t.image !== "" ? `<div class="ticket-image-box"><div style="font-size:12px; font-weight:600; color:#64748b; margin-bottom:4px;">📷 รูปก่อนซ่อม:</div><img src="${t.image}" onclick="document.getElementById('modalImg').src='${t.image}'; document.getElementById('imageModal').classList.add('active');"></div>` : '';
+                    let afterImgHtml = t.afterImage && t.afterImage !== "" ? `<div class="ticket-image-box"><div style="font-size:12px; font-weight:600; color:#166534; margin-bottom:4px;">✨ รูปหลังซ่อม:</div><img src="${t.afterImage}" onclick="document.getElementById('modalImg').src='${t.afterImage}'; document.getElementById('imageModal').classList.add('active');"></div>` : '';
+
+                    let imagesWrapper = (beforeImgHtml || afterImgHtml) ? `<div class="ticket-images-wrapper">${beforeImgHtml}${afterImgHtml}</div>` : '';
 
                     let repairBox = (t.rootCause || (t.partsUsed && t.partsUsed.length > 0)) ? `
                         <div class="repair-result-box">
                             <div style="font-weight:bold; color:#166534; margin-bottom:6px;">🛠️ รายงานผลการซ่อม (ช่าง: ${t.techName || '-'})</div>
                             <div><strong>🔍 สาเหตุ:</strong> ${t.rootCause}</div>
                             <div><strong>🔩 อะไหล่/รายการ:</strong> ${t.partsUsed ? t.partsUsed.map(p => `${p.name} (${p.qty} ชิ้น)`).join(', ') : '-'}</div>
+                            ${t.techRemarks ? `<div><strong>📝 หมายเหตุ:</strong> ${t.techRemarks}</div>` : ''}
                         </div>` : '';
 
                     let pdfBtn = t.pdfUrl && t.pdfUrl !== '-' ? `<a href="${t.pdfUrl}" target="_blank" class="btn-status btn-print">📥 PDF ใบงาน</a>` : '';
@@ -340,7 +355,7 @@
                                 <div class="info-row">⚙️ เครื่องจักร: <span>${t.machine || '-'}</span></div>
                             </div>
                             <div style="margin-top: 8px; font-size: 14px;">📝 อาการ: ${t.details || '-'}</div>
-                            ${imageHtml}
+                            ${imagesWrapper}
                             ${repairBox}
                             <div class="tech-actions">
                                 <span style="font-size: 13px; color: #64748b;">จัดการ:</span>
@@ -366,6 +381,8 @@
             if (!t) return;
 
             let partsStr = (t.partsUsed && t.partsUsed.length > 0) ? t.partsUsed.map(p => `• ${p.name} (จำนวน ${p.qty} ชิ้น)`).join('<br>') : '- ไม่มีรายการอะไหล่ -';
+            let beforeImg = t.image ? `<div style="text-align:center;"><img src="${t.image}" style="max-width:180px; max-height:140px; border:1px solid #000; border-radius:4px;"><br><small>ภาพก่อนซ่อม</small></div>` : '';
+            let afterImg = t.afterImage ? `<div style="text-align:center;"><img src="${t.afterImage}" style="max-width:180px; max-height:140px; border:1px solid #000; border-radius:4px;"><br><small>ภาพหลังซ่อม</small></div>` : '';
 
             let contentHTML = `
                 <table style="width:100%; border-collapse: collapse; margin-bottom: 15px;">
@@ -388,13 +405,19 @@
                     </tr>
                 </table>
 
-                <div style="border: 1px solid #000; padding: 12px; margin-bottom: 20px;">
+                <div style="border: 1px solid #000; padding: 12px; margin-bottom: 15px;">
                     <div style="font-weight: bold; margin-bottom: 6px; border-bottom: 1px solid #000; padding-bottom: 4px;">🛠️ บันทึกผลการปฏิบัติงานของช่าง</div>
                     <div style="margin-bottom: 6px;"><strong>👨‍🔧 ช่างผู้ซ่อม:</strong> ${t.techName || '-'}</div>
                     <div style="margin-bottom: 6px;"><strong>🔍 สาเหตุการเสียจริง:</strong> ${t.rootCause || '-'}</div>
                     <div style="margin-bottom: 6px;"><strong>🔩 อะไหล่/รายการ:</strong><br>${partsStr}</div>
                     <div><strong>📝 หมายเหตุ:</strong> ${t.techRemarks || '-'}</div>
                 </div>
+
+                ${(beforeImg || afterImg) ? `
+                <div style="border: 1px solid #000; padding: 12px; margin-bottom: 20px; display:flex; justify-content:space-around; align-items:center;">
+                    ${beforeImg}
+                    ${afterImg}
+                </div>` : ''}
             `;
 
             document.getElementById('printContentBody').innerHTML = contentHTML;
@@ -409,6 +432,7 @@
             document.getElementById('techName').value = t.techName || '';
             document.getElementById('rootCause').value = t.rootCause || '';
             document.getElementById('techRemarks').value = t.techRemarks || '';
+            document.getElementById('afterRepairImage').value = '';
             
             const container = document.getElementById('partsContainer');
             container.innerHTML = '';
@@ -438,11 +462,16 @@
 
         function saveCloseJobReport(e) {
             e.preventDefault();
+            const saveBtn = document.getElementById('saveCloseBtn');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = "⏳ กำลังบันทึกข้อมูล...";
+
             const id = document.getElementById('closeTicketId').value;
             const techName = document.getElementById('techName').value.trim();
             const rootCause = document.getElementById('rootCause').value.trim();
             const closeStatus = document.getElementById('closeStatus').value;
             const techRemarks = document.getElementById('techRemarks').value.trim();
+            const imageInput = document.getElementById('afterRepairImage');
 
             let partsUsed = [];
             document.querySelectorAll('.part-item-row').forEach(row => {
@@ -451,27 +480,76 @@
                 if (name) partsUsed.push({ name, qty });
             });
 
-            let targetTicket = null;
-            tickets = tickets.map(t => {
-                if (t.ticketId === id) {
-                    t.status = closeStatus;
-                    t.techName = techName;
-                    t.rootCause = rootCause;
-                    t.partsUsed = partsUsed;
-                    t.techRemarks = techRemarks;
-                    targetTicket = t;
-                }
-                return t;
-            });
+            const processSave = (afterImgBase64) => {
+                let targetTicket = null;
+                tickets = tickets.map(t => {
+                    if (t.ticketId === id) {
+                        t.status = closeStatus;
+                        t.techName = techName;
+                        t.rootCause = rootCause;
+                        t.partsUsed = partsUsed;
+                        t.techRemarks = techRemarks;
+                        if (afterImgBase64) t.afterImage = afterImgBase64;
+                        targetTicket = t;
+                    }
+                    return t;
+                });
 
-            closeCloseJobModal();
-            filterTickets();
+                closeCloseJobModal();
+                filterTickets();
 
-            var updateSheetUrl = gasWebAppUrl + "?action=updateStatus&id=" + encodeURIComponent(id) + "&status=" + encodeURIComponent(closeStatus);
-            fetch(updateSheetUrl).catch(err => console.error("Sheet Update Error:", err));
+                // ส่งข้อมูลปิดงานพร้อมรูปหลังซ่อมไปที่ Google Apps Script
+                fetch(gasWebAppUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({
+                        action: "closeJob",
+                        ticketId: id,
+                        status: closeStatus,
+                        techName: techName,
+                        rootCause: rootCause,
+                        partsUsed: partsUsed,
+                        techRemarks: techRemarks,
+                        afterImage: afterImgBase64
+                    })
+                }).catch(err => console.error("Update Error:", err));
 
-            sendLineCompletionNotice(targetTicket);
-            alert(`✅ บันทึกข้อมูลและส่งแจ้งเตือน LINE สำเร็จ!`);
+                sendLineCompletionNotice(targetTicket);
+                alert(`✅ บันทึกข้อมูลและส่งแจ้งเตือน LINE สำเร็จ!`);
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = "💾 บันทึก & ส่ง LINE";
+            };
+
+            if (imageInput.files && imageInput.files[0]) {
+                const file = imageInput.files[0];
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 500;
+                        const MAX_HEIGHT = 500;
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > height) {
+                            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                        } else {
+                            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        processSave(canvas.toDataURL('image/jpeg', 0.5));
+                    };
+                    img.onerror = () => processSave("");
+                    img.src = event.target.result;
+                };
+                reader.onerror = () => processSave("");
+                reader.readAsDataURL(file);
+            } else {
+                processSave("");
+            }
         }
 
         function sendLineCompletionNotice(t) {
