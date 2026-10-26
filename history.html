@@ -70,22 +70,23 @@
         .btn-add-part { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; margin-top: 4px; display: inline-block; }
 
         @media print {
+            @page { size: A4 portrait; margin: 10mm; }
             body { background: white; padding: 0; margin: 0; }
             .container > *:not(#printArea), .status-tabs, .filter-box, .btn-group, .tech-actions, .header-badge, h1, .sub-desc, .modal-overlay { display: none !important; }
             .print-job-card { 
                 display: block !important; 
                 width: 100% !important; 
-                max-width: 100% !important;
-                border: none !important; 
-                padding: 10px 20px !important; 
+                max-width: 100% !important; 
+                border: 2px solid #000 !important; 
+                padding: 20px !important; 
                 background: #fff !important; 
-                margin: 0 auto !important;
+                margin: 0 auto !important; 
                 box-shadow: none !important;
             }
-            /* ขยายตารางและกรอบใบงานให้เต็มหน้ากระดาษ A4 */
             #printArea table { width: 100% !important; font-size: 15px !important; }
-            #printArea img { max-width: 220px !important; max-height: 180px !important; }
+            #printArea img { max-width: 200px !important; max-height: 150px !important; }
         }
+        .print-job-card { display: none; }
     </style>
 </head>
 <body>
@@ -141,7 +142,7 @@
         <img id="modalImg" src="" style="max-width:90%; max-height:90vh; border-radius:12px; border:3px solid #fff;">
     </div>
 
-    <!-- Modal บันทึกรายละเอียดการซ่อม (เพิ่มช่องถ่ายรูปหลังซ่อม) -->
+    <!-- Modal บันทึกรายละเอียดการซ่อม (มีช่องถ่ายรูปหลังซ่อม) -->
     <div class="modal-overlay" id="closeJobModal">
         <div class="form-modal-box">
             <div class="form-modal-header">
@@ -175,7 +176,6 @@
                     <textarea id="techRemarks" rows="2" placeholder="หมายเหตุเพิ่มเติม"></textarea>
                 </div>
                 
-                <!-- 📌 เพิ่มช่องถ่ายภาพหลังซ่อมเพิ่มตรงนี้ตามคำขอ -->
                 <div class="modal-form-group" style="background: #f0fdf4; border: 1px dashed #22c55e; padding: 12px; border-radius: 12px;">
                     <label style="color: #166534;">📸 ถ่ายภาพหลังซ่อม (After Repair) :</label>
                     <input type="file" id="afterRepairImage" accept="image/*" capture="environment">
@@ -509,7 +509,6 @@
                 closeCloseJobModal();
                 filterTickets();
 
-                // ส่งข้อมูลปิดงานพร้อมรูปหลังซ่อมไปที่ Google Apps Script
                 fetch(gasWebAppUrl, {
                     method: "POST",
                     headers: { "Content-Type": "text/plain;charset=utf-8" },
