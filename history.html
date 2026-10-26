@@ -102,7 +102,7 @@
         </div>
 
         <div id="historyContainer">
-            <div style="text-align: center; color: #166534; padding: 30px; font-weight: bold;">⏳ กำลังเชื่อมต่อดึงข้อมูลจาก Google Sheets...</div>
+            <div style="text-align: center; color: #166534; padding: 30px; font-weight: bold;">⏳ กำลังโหลดข้อมูล...</div>
         </div>
 
         <div class="btn-group">
@@ -183,6 +183,9 @@
                     if (Array.isArray(data)) {
                         tickets = data;
                         try { localStorage.setItem('repairTickets', JSON.stringify(tickets)); } catch(e){}
+                    } else {
+                        let saved = localStorage.getItem('repairTickets');
+                        tickets = saved ? JSON.parse(saved) : [];
                     }
                     updateTabCounts();
                     checkUrlParamAndFilter();
@@ -296,7 +299,6 @@
         function deleteTicket(id) {
             if (!confirm("⚠️ ต้องการลบใบงานเลขที่ " + id + " นี้ออกจากระบบและ Google Sheets ถาวรใช่หรือไม่?")) return;
             
-            // 1. ลบออกจากหน้าเว็บทันที
             tickets = tickets.filter(t => t.ticketId !== id);
             try {
                 localStorage.setItem('repairTickets', JSON.stringify(tickets));
@@ -304,11 +306,8 @@
             
             filterTickets();
 
-            // 2. ส่งสัญญาณไปลบออกจาก Google Sheets แบบถาวร
             const deleteUrl = gasWebAppUrl + "?action=deleteTicket&id=" + encodeURIComponent(id);
-            fetch(deleteUrl)
-                .then(() => console.log("Deleted from sheet successfully"))
-                .catch(err => console.error("Delete Error:", err));
+            fetch(deleteUrl).catch(err => console.error("Delete Error:", err));
                 
             alert("🗑️ ลบใบงานเรียบร้อยแล้วครับ");
         }
@@ -332,16 +331,16 @@
                     html += `
                         <div class="ticket-item">
                             <div class="ticket-header">
-                                <div class="ticket-id">📌 ${t.ticketId}</div>
-                                <div class="status-badge">${t.status}</div>
+                                <div class="ticket-id">📌 ${t.ticketId || '-'}</div>
+                                <div class="status-badge">${t.status || 'รอดำเนินการ'}</div>
                             </div>
                             <div class="info-grid">
-                                <div class="info-row">⏱️ เวลา: <span>${t.time}</span></div>
+                                <div class="info-row">⏱️ เวลา: <span>${t.time || '-'}</span></div>
                                 <div class="info-row">👤 ผู้แจ้ง: <span>${t.reporter || '-'}</span></div>
                                 <div class="info-row">📍 โซน: <span>${t.zone || '-'}</span></div>
-                                <div class="info-row">⚙️ เครื่องจักร: <span>${t.machine}</span></div>
+                                <div class="info-row">⚙️ เครื่องจักร: <span>${t.machine || '-'}</span></div>
                             </div>
-                            <div style="margin-top: 8px; font-size: 14px;">📝 อาการ: ${t.details}</div>
+                            <div style="margin-top: 8px; font-size: 14px;">📝 อาการ: ${t.details || '-'}</div>
                             ${imageHtml}
                             ${repairBox}
                             <div class="tech-actions">
@@ -512,13 +511,13 @@
 
             const filtered = tickets.filter(t => {
                 let matchKeyword = !keyword || 
-                    String(t.ticketId).toLowerCase().includes(keyword) ||
+                    String(t.ticketId || '').toLowerCase().includes(keyword) ||
                     String(t.reporter || '').toLowerCase().includes(keyword) ||
-                    String(t.machine).toLowerCase().includes(keyword) ||
+                    String(t.machine || '').toLowerCase().includes(keyword) ||
                     String(t.zone || '').toLowerCase().includes(keyword) ||
-                    String(t.details).toLowerCase().includes(keyword);
+                    String(t.details || '').toLowerCase().includes(keyword);
 
-                let matchDate = dateQuery === "" || String(t.time).includes(dateQuery);
+                let matchDate = dateQuery === "" || String(t.time || '').includes(dateQuery);
 
                 let st = (t.status || "").toLowerCase();
                 let matchTab = true;
