@@ -135,7 +135,7 @@
     <div id="lineToast">
         <span style="font-size: 24px;">💬</span>
         <div>
-            <div style="font-size: 13px; opacity: 0.9;">บันทึกข้อมูลและส่งแจ้งเตือนแล้ว!</div>
+            <div style="font-size: 13px; opacity: 0.9;">LINE Notify แจ้งเตือนทีมช่างแล้ว!</div>
             <div id="lineToastMsg" style="font-size: 14px; font-weight: bold;">ส่งใบงานสำเร็จ</div>
         </div>
     </div>
@@ -151,6 +151,7 @@
 
     <script>
         const gasWebAppUrl = "https://script.google.com/macros/s/AKfycbx-tOKJabbtssGnG3IiorYDOlHqBOv3Q8LhdUF_UmBn2JVcWVV99oM0DOBSh7EZEFNO/exec"; 
+        const targetGroupId = "C1eb35ecfdad43ecf42065fe8539d93a6";
 
         function checkOtherRoom(selectObj) {
             const otherGroup = document.getElementById('otherRoomGroup');
@@ -180,7 +181,7 @@
             e.preventDefault();
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
-            submitBtn.innerHTML = "⏳ กำลังประมวลผลและส่งข้อมูล...";
+            submitBtn.innerHTML = "⏳ กำลังส่งข้อมูล...";
 
             const zone = document.getElementById('zone').value;
             let room = document.getElementById('room').value;
@@ -245,50 +246,26 @@
                         ctx.drawImage(img, 0, 0, width, height);
 
                         const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                        saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, compressedDataUrl);
+                        sendDataToCloud(ticketId, timeStr, reporter, zone, room, machine, details, compressedDataUrl);
                     };
                     img.onerror = function() {
-                        saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, "");
+                        sendDataToCloud(ticketId, timeStr, reporter, zone, room, machine, details, "");
                     };
                     img.src = event.target.result;
                 };
                 reader.onerror = function() {
-                    saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, "");
+                    sendDataToCloud(ticketId, timeStr, reporter, zone, room, machine, details, "");
                 };
                 reader.readAsDataURL(file);
             } else {
-                saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, "");
+                sendDataToCloud(ticketId, timeStr, reporter, zone, room, machine, details, "");
             }
         }
 
-        function saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, imageUrl) {
-            const ticketData = {
-                ticketId: ticketId,
-                zone: zone,
-                room: room ? room : '-',
-                reporter: reporter,
-                machine: machine,
-                details: details,
-                time: timeStr,
-                image: imageUrl,
-                status: '🔴 รอดำเนินการซ่อม (Pending)'
-            };
+        function sendDataToCloud(ticketId, timeStr, reporter, zone, room, machine, details, imageUrl) {
+            const fullZone = zone + (room ? ` (${room})` : '');
 
-            try {
-                tickets.unshift(ticketData);
-                let cleanTickets = tickets.slice(0, 15).map((t, idx) => {
-                    if (idx > 2) t.image = null;
-                    return t;
-                });
-                localStorage.setItem('repairTickets', JSON.stringify(cleanTickets));
-            } catch (err) {
-                console.warn("LocalStorage full, clearing cache:", err);
-                try {
-                    localStorage.clear();
-                    localStorage.setItem('repairTickets', JSON.stringify([ticketData]));
-                } catch (e) {}
-            }
-
+            // 1. ส่งข้อมูลเข้า Google Sheets แบบเสถียร (ใช้โครงสร้างเดิมที่เคยทำงานได้ปกติ)
             fetch(gasWebAppUrl, {
                 method: "POST",
                 mode: "no-cors",
@@ -298,12 +275,39 @@
                     ticketId: ticketId,
                     time: timeStr,
                     reporter: reporter,
-                    zone: zone + (room ? ` (${room})` : ''),
+                    zone: fullZone,
                     machine: machine,
                     details: details,
                     image: imageUrl
                 })
             }).catch(error => console.error("Sheet Save Error:", error));
+
+            // 2. ส่ง LINE แจ้งเตือนเข้ากลุ่มทันที
+            const currentBaseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+            const directLink = currentBaseUrl + 'history.html?id=' + ticketId;
+
+            const messageText = 
+                `🚨 **[แจ้งซ่อมใหม่ - Green Food Factory]** 🚨\n` +
+                `----------------------------------\n` +
+                `🎫 เลขที่ใบแจ้ง: ${ticketId}\n` +
+                `⏱️ เวลาแจ้ง: ${timeStr}\n` +
+                `👤 ผู้แจ้ง: ${reporter}\n` +
+                `📍 โซนพื้นที่: ${fullZone}\n` +
+                `⚙️ เครื่องจักร: ${machine}\n` +
+                `📝 อาการเสีย: ${details}\n` +
+                `----------------------------------\n` +
+                `👉 **คลิกเพื่อดูและจัดการใบงานทันที:**\n${directLink}`;
+
+            fetch(gasWebAppUrl, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "sendGroupMessage",
+                    groupId: targetGroupId,
+                    message: messageText
+                })
+            }).catch(error => console.error("LINE Error:", error));
 
             showLineToast(ticketId, machine);
 
@@ -315,7 +319,7 @@
             const toast = document.getElementById('lineToast');
             document.getElementById('lineToastMsg').innerText = `[${ticketId}] ${machine}`;
             toast.classList.add('show');
-            setTimeout(() => {
+            setTimeout => {
                 toast.classList.remove('show');
             }, 4000);
         }
