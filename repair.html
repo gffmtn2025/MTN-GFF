@@ -313,6 +313,7 @@
         }
 
         function saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, imageUrl) {
+            // ตัดการเก็บรูปภาพลง LocalStorage เพื่อป้องกันหน่วยความจำเต็ม (แต่ยังส่งข้อมูลและแจ้งเตือนปกติ)
             const ticketData = {
                 ticketId: ticketId,
                 zone: zone,
@@ -321,15 +322,17 @@
                 machine: machine,
                 details: details,
                 time: timeStr,
-                image: imageUrl,
+                image: null, // ไม่เก็บบนเครื่องเพื่อแก้ปัญหาหน่วยความจำเต็ม
                 status: '🔴 รอดำเนินการซ่อม (Pending)'
             };
 
             try {
+                // บันทึกเฉพาะข้อมูลตัวหนังสือลง LocalStorage
                 tickets.unshift(ticketData); 
                 localStorage.setItem('repairTickets', JSON.stringify(tickets));
                 localStorage.setItem('latestTicket', JSON.stringify(ticketData));
 
+                // ส่งข้อมูลเข้า LINE และ Google Sheets
                 sendLineNotification({
                     ticketId: ticketId,
                     timestamp: timeStr,
@@ -344,7 +347,21 @@
                 document.getElementById('successModal').classList.add('active');
                 setTimeout(() => { goToStatusPage(); }, 2500);
             } catch (err) {
-                alert("⚠️ เกิดข้อผิดพลาดในการบันทึกข้อมูล (หน่วยความจำในเครื่องอาจเต็ม): " + err.message);
+                // เผื่อกรณี LocalStorage เต็มสนิทจริงๆ ให้ล้างข้อมูลเก่าทิ้งแล้วบันทึกใหม่ทันที
+                localStorage.removeItem('repairTickets');
+                localStorage.setItem('repairTickets', JSON.stringify([ticketData]));
+                
+                sendLineNotification({
+                    ticketId: ticketId,
+                    timestamp: timeStr,
+                    reporterName: reporter,
+                    zone: zone + (room ? ` (${room})` : ''),
+                    machine: machine,
+                    details: details
+                });
+
+                document.getElementById('successModal').classList.add('active');
+                setTimeout(() => { goToStatusPage(); }, 2500);
             }
         }
 
