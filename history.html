@@ -174,7 +174,6 @@
         let tickets = [];
         let currentTabFilter = 'ALL';
 
-        // 🔄 ดึงข้อมูลสดจาก Google Sheets โดยตรงผ่านคำขอ getTickets
         function loadTickets() {
             const fetchUrl = gasWebAppUrl + "?action=getTickets";
             
@@ -302,7 +301,7 @@
             if (dataToRender.length > 0) {
                 let html = '';
                 dataToRender.forEach(t => {
-                    let imageHtml = t.image ? `<div class="ticket-image-container"><div style="font-size:13px; font-weight:600; color:#64748b; margin-bottom:5px;">🖼️ รูปถ่ายอาการเสีย:</div><img src="${t.image}" onclick="document.getElementById('modalImg').src='${t.image}'; document.getElementById('imageModal').classList.add('active');"></div>` : '';
+                    let imageHtml = t.image && t.image !== "" ? `<div class="ticket-image-container"><div style="font-size:13px; font-weight:600; color:#64748b; margin-bottom:5px;">🖼️ รูปถ่ายอาการเสีย:</div><img src="${t.image}" onclick="document.getElementById('modalImg').src='${t.image}'; document.getElementById('imageModal').classList.add('active');"></div>` : '';
 
                     let repairBox = (t.rootCause || (t.partsUsed && t.partsUsed.length > 0)) ? `
                         <div class="repair-result-box">
