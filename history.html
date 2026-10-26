@@ -79,7 +79,7 @@
     <div class="container">
         <span class="header-badge">🥬 GREEN FOOD FACTORY</span>
         <h1>📋 จัดการประวัติและสถานะการแจ้งซ่อม</h1>
-        <div class="sub-desc">หน้าต่างบริหารจัดการงานซ่อมและบันทึกรายงานปิดงานของช่าง (ซิงค์ข้อมูลจากคลาวด์)</div>
+        <div class="sub-desc">หน้าต่างบริหารจัดการงานซ่อมและบันทึกรายงานปิดงานของช่าง</div>
 
         <div class="status-tabs">
             <button class="tab-btn active-all" id="tabAll" onclick="selectStatusTab('ALL')">📋 ทั้งหมด <span class="tab-count" id="countAll">0</span></button>
@@ -102,7 +102,7 @@
         </div>
 
         <div id="historyContainer">
-            <div style="text-align: center; color: #166534; padding: 30px; font-weight: bold;">⏳ กำลังโหลดข้อมูลจากระบบ...</div>
+            <div style="text-align: center; color: #166534; padding: 30px; font-weight: bold;">⏳ กำลังเชื่อมต่อดึงข้อมูลจาก Google Sheets...</div>
         </div>
 
         <div class="btn-group">
@@ -174,7 +174,7 @@
         let tickets = [];
         let currentTabFilter = 'ALL';
 
-        // 🔄 ดึงข้อมูลสดจาก Google Sheets (แก้ปัญหาเปิดเครื่องไหนก็เจอใบงาน)
+        // 🔄 ดึงข้อมูลสดจาก Google Sheets โดยตรงผ่านคำขอ getTickets
         function loadTickets() {
             const fetchUrl = gasWebAppUrl + "?action=getTickets";
             
@@ -183,7 +183,7 @@
                 .then(data => {
                     if (Array.isArray(data) && data.length > 0) {
                         tickets = data;
-                        localStorage.setItem('repairTickets', JSON.stringify(tickets));
+                        try { localStorage.setItem('repairTickets', JSON.stringify(tickets)); } catch(e){}
                     } else {
                         let saved = localStorage.getItem('repairTickets');
                         tickets = saved ? JSON.parse(saved) : [];
@@ -192,7 +192,7 @@
                     checkUrlParamAndFilter();
                 })
                 .catch(err => {
-                    console.log("Cloud fetch failed, using local storage:", err);
+                    console.log("Cloud fetch failed, fallback to local storage:", err);
                     let saved = localStorage.getItem('repairTickets');
                     tickets = saved ? JSON.parse(saved) : [];
                     updateTabCounts();
@@ -216,7 +216,7 @@
                         searchInput.value = targetId;
                         filterTickets();
                     }
-                }, 300);
+                }, 200);
             } else {
                 filterTickets();
             }
@@ -272,7 +272,6 @@
                     return t;
                 });
 
-                localStorage.setItem('repairTickets', JSON.stringify(tickets));
                 filterTickets();
 
                 var updateSheetUrl = gasWebAppUrl + "?action=updateStatus&id=" + encodeURIComponent(id) + "&status=" + encodeURIComponent("❌ ยกเลิกใบงาน (Cancelled)");
@@ -451,7 +450,6 @@
                 return t;
             });
 
-            localStorage.setItem('repairTickets', JSON.stringify(tickets));
             closeCloseJobModal();
             filterTickets();
 
@@ -484,7 +482,6 @@
 
         function updateStatus(id, newSt) {
             tickets = tickets.map(t => { if (t.ticketId === id) t.status = newSt; return t; });
-            localStorage.setItem('repairTickets', JSON.stringify(tickets));
             filterTickets();
 
             var updateSheetUrl = gasWebAppUrl + "?action=updateStatus&id=" + encodeURIComponent(id) + "&status=" + encodeURIComponent(newSt);
@@ -496,7 +493,6 @@
         function deleteTicket(id) {
             if (!confirm("⚠️ ต้องการลบใบงานนี้ใช่หรือไม่?")) return;
             tickets = tickets.filter(t => t.ticketId !== id);
-            localStorage.setItem('repairTickets', JSON.stringify(tickets));
             filterTickets();
         }
 

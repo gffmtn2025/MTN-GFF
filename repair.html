@@ -18,10 +18,6 @@
         .tool-3 { top: 18%; right: 8%; animation-delay: 2.5s; font-size: 42px; }
         .tool-4 { top: 70%; right: 7%; animation-delay: 1s; font-size: 48px; }
 
-        .mechanic-mascot { position: fixed; bottom: 20px; left: 3%; height: 380px; z-index: 3; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.15)); pointer-events: none; transition: all 0.3s ease; }
-        @media (max-width: 1024px) { .mechanic-mascot { height: 280px; left: 1%; } }
-        @media (max-width: 768px) { .mechanic-mascot { display: none; } }
-
         .top-nav { padding: 20px 30px; position: relative; z-index: 10; display: flex; gap: 10px; }
         .back-btn { display: inline-flex; align-items: center; color: #15803d; text-decoration: none; font-weight: 600; font-size: 15px; background-color: rgba(255, 255, 255, 0.9); padding: 8px 18px; border-radius: 20px; border: 1px solid #bbf7d0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: all 0.2s ease; cursor: pointer; }
         .back-btn:hover { background-color: #22c55e; color: white; transform: translateX(-4px); }
@@ -42,6 +38,7 @@
 
         .submit-btn { width: 100%; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; border: none; padding: 15px; border-radius: 14px; font-size: 17px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3); transition: all 0.3s ease; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .submit-btn:hover { background: linear-gradient(135deg, #16a34a, #15803d); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4); }
+        .submit-btn:disabled { background: #94a3b8; cursor: not-allowed; }
 
         #lineToast { position: fixed; bottom: 25px; right: 25px; background: #06c755; color: white; padding: 15px 20px; border-radius: 14px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 10000; display: flex; align-items: center; gap: 12px; transform: translateY(120px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight: 600; }
         #lineToast.show { transform: translateY(0); }
@@ -124,11 +121,11 @@
                 </div>
 
                 <div class="form-group">
-    <label for="repairImage">📸 ถ่ายภาพอาการเสีย (เปิดกล้องทันที) :</label>
-    <input type="file" id="repairImage" capture="environment">
-</div>
+                    <label for="repairImage">📸 ถ่ายภาพอาการเสีย :</label>
+                    <input type="file" id="repairImage" accept="image/*" capture="environment">
+                </div>
 
-                <button type="submit" class="submit-btn">
+                <button type="submit" class="submit-btn" id="submitBtn">
                     <span>⚙️</span> ส่งข้อมูลแจ้งซ่อม
                 </button>
             </form>
@@ -184,7 +181,7 @@
                 })
             }).catch(error => console.error("LINE Error:", error));
 
-            // 2. ส่งข้อมูลบันทึกลง Google Sheets และสร้าง PDF (รวมอยู่ในคำขอเดียวตรงนี้)
+            // 2. ส่งข้อมูลบันทึกลง Google Sheets
             fetch(gasWebAppUrl, {
                 method: "POST",
                 mode: "no-cors",
@@ -228,6 +225,9 @@
 
         function submitRepairForm(e) {
             e.preventDefault();
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = "⏳ กำลังส่งข้อมูล...";
 
             const zone = document.getElementById('zone').value;
             let room = document.getElementById('room').value;
@@ -237,14 +237,20 @@
             const reporter = document.getElementById('reporter').value;
             const machine = document.getElementById('machine').value;
             const details = document.getElementById('details').value;
+            const imageInput = document.getElementById('repairImage');
 
-            let tickets = JSON.parse(localStorage.getItem('repairTickets')) || [];
+            let tickets = [];
+            try {
+                tickets = JSON.parse(localStorage.getItem('repairTickets')) || [];
+            } catch (err) {
+                tickets = [];
+            }
 
             let maxIdNum = 0;
             tickets.forEach(ticket => {
-                let numPart = parseInt(ticket.ticketId.replace('GFF-', '')) || 0;
-                if (numPart > maxIdNum) {
-                    maxIdNum = numPart;
+                if (ticket && ticket.ticketId) {
+                    let numPart = parseInt(ticket.ticketId.replace('GFF-', '')) || 0;
+                    if (numPart > maxIdNum) maxIdNum = numPart;
                 }
             });
 
@@ -255,46 +261,55 @@
             const now = new Date();
             const timeStr = now.toLocaleDateString('th-TH') + ' ' + now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
-            // 🚀 ข้ามการแปลงไฟล์ภาพบนมือถือ เพื่อป้องกันหน่วยความจำเต็มและอาการค้าง
-            // ส่งข้อมูลทั้งหมดเข้า LocalStorage และระบบ LINE/Sheets ทันทีอย่างรวดเร็ว
-            const ticketData = {
-                ticketId: ticketId,
-                zone: zone,
-                room: room ? room : '-',
-                reporter: reporter,
-                machine: machine,
-                details: details,
-                time: timeStr,
-                image: null, 
-                status: '🔴 รอดำเนินการซ่อม (Pending)'
-            };
+            // เช็คว่าเลือกรูปภาพไว้ไหม
+            if (imageInput.files && imageInput.files[0]) {
+                const file = imageInput.files[0];
+                const reader = new FileReader();
 
-            try {
-                tickets.unshift(ticketData); 
-                localStorage.setItem('repairTickets', JSON.stringify(tickets));
-                localStorage.setItem('latestTicket', JSON.stringify(ticketData));
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800;
+                        const MAX_HEIGHT = 800;
+                        let width = img.width;
+                        let height = img.height;
 
-                sendLineNotification({
-                    ticketId: ticketId,
-                    timestamp: timeStr,
-                    reporterName: reporter,
-                    zone: zone + (room ? ` (${room})` : ''),
-                    machine: machine,
-                    details: details
-                });
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
 
-                showLineToast(ticketId, machine);
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
 
-                document.getElementById('successModal').classList.add('active');
-                setTimeout(() => { goToStatusPage(); }, 2500);
-
-            } catch (err) {
-                alert("⚠️ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง: " + err.message);
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                        saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, compressedDataUrl);
+                    };
+                    img.onerror = function() {
+                        saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, null);
+                    };
+                    img.src = event.target.result;
+                };
+                reader.onerror = function() {
+                    saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, null);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, null);
             }
         }
 
         function saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, imageUrl) {
-            // ตัดการเก็บรูปภาพลง LocalStorage เพื่อป้องกันหน่วยความจำเต็ม (แต่ยังส่งข้อมูลและแจ้งเตือนปกติ)
             const ticketData = {
                 ticketId: ticketId,
                 zone: zone,
@@ -303,47 +318,43 @@
                 machine: machine,
                 details: details,
                 time: timeStr,
-                image: null, // ไม่เก็บบนเครื่องเพื่อแก้ปัญหาหน่วยความจำเต็ม
+                image: imageUrl,
                 status: '🔴 รอดำเนินการซ่อม (Pending)'
             };
 
+            // พยายามเก็บบันทึกลง LocalStorage (ถ้าเต็มจะทำการล้างแคชภาพแล้วเซฟใหม่)
             try {
-                // บันทึกเฉพาะข้อมูลตัวหนังสือลง LocalStorage
-                tickets.unshift(ticketData); 
-                localStorage.setItem('repairTickets', JSON.stringify(tickets));
-                localStorage.setItem('latestTicket', JSON.stringify(ticketData));
-
-                // ส่งข้อมูลเข้า LINE และ Google Sheets
-                sendLineNotification({
-                    ticketId: ticketId,
-                    timestamp: timeStr,
-                    reporterName: reporter,
-                    zone: zone + (room ? ` (${room})` : ''),
-                    machine: machine,
-                    details: details
+                tickets.unshift(ticketData);
+                // ตัดภาพในประวัติเก่าๆ ออกเพื่อประหยัดพื้นที่ LocalStorage ไม่ให้เต็ม
+                let cleanTickets = tickets.slice(0, 15).map((t, idx) => {
+                    if (idx > 2) t.image = null; // เก็บภาพเฉพาะ 3 ใบงานล่าสุด
+                    return t;
                 });
-
-                showLineToast(ticketId, machine);
-
-                document.getElementById('successModal').classList.add('active');
-                setTimeout(() => { goToStatusPage(); }, 2500);
+                localStorage.setItem('repairTickets', JSON.stringify(cleanTickets));
             } catch (err) {
-                // เผื่อกรณี LocalStorage เต็มสนิทจริงๆ ให้ล้างข้อมูลเก่าทิ้งแล้วบันทึกใหม่ทันที
-                localStorage.removeItem('repairTickets');
-                localStorage.setItem('repairTickets', JSON.stringify([ticketData]));
-                
-                sendLineNotification({
-                    ticketId: ticketId,
-                    timestamp: timeStr,
-                    reporterName: reporter,
-                    zone: zone + (room ? ` (${room})` : ''),
-                    machine: machine,
-                    details: details
-                });
-
-                document.getElementById('successModal').classList.add('active');
-                setTimeout(() => { goToStatusPage(); }, 2500);
+                console.warn("LocalStorage full, clearing cache:", err);
+                try {
+                    localStorage.clear();
+                    localStorage.setItem('repairTickets', JSON.stringify([ticketData]));
+                } catch (e) {
+                    console.error("Storage error completely bypassed");
+                }
             }
+
+            // ส่งข้อมูลแจ้งเตือนและลง Sheets ทันที
+            sendLineNotification({
+                ticketId: ticketId,
+                timestamp: timeStr,
+                reporterName: reporter,
+                zone: zone + (room ? ` (${room})` : ''),
+                machine: machine,
+                details: details
+            });
+
+            showLineToast(ticketId, machine);
+
+            document.getElementById('successModal').classList.add('active');
+            setTimeout(() => { goToStatusPage(); }, 2500);
         }
 
         function showLineToast(ticketId, machine) {
