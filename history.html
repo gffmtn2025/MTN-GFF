@@ -40,7 +40,7 @@
         
         .tech-actions { margin-top: 15px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .action-btns { display: flex; gap: 8px; flex-wrap: wrap; }
-        .btn-status { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; border: 1px solid transparent; }
+        .btn-status { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; border: 1px solid transparent; text-decoration: none; display: inline-flex; align-items: center; }
         .btn-progress { background: #fef08a; color: #854d0e; }
         .btn-close-job { background: #16a34a; color: white; }
         .btn-print { background: #0284c7; color: white; }
@@ -79,7 +79,7 @@
     <div class="container">
         <span class="header-badge">🥬 GREEN FOOD FACTORY</span>
         <h1>📋 จัดการประวัติและสถานะการแจ้งซ่อม</h1>
-        <div class="sub-desc">หน้าต่างบริหารจัดการงานซ่อมและบันทึกรายงานปิดงานของช่าง</div>
+        <div class="sub-desc">หน้าต่างบริหารจัดการงานซ่อมและบันทึกรายงานปิดงานของช่าง (ซิงค์ข้อมูลจากคลาวด์)</div>
 
         <div class="status-tabs">
             <button class="tab-btn active-all" id="tabAll" onclick="selectStatusTab('ALL')">📋 ทั้งหมด <span class="tab-count" id="countAll">0</span></button>
@@ -97,11 +97,13 @@
             </div>
             <div class="filter-group">
                 <label for="searchDate">📅 กรองตามวันที่ (เช่น DD/MM/YYYY):</label>
-                <input type="text" id="searchDate" placeholder="เช่น 25/10/2569" onkeyup="filterTickets()" onchange="filterTickets()">
+                <input type="text" id="searchDate" placeholder="เช่น 26/10/2569" onkeyup="filterTickets()" onchange="filterTickets()">
             </div>
         </div>
 
-        <div id="historyContainer"></div>
+        <div id="historyContainer">
+            <div style="text-align: center; color: #166534; padding: 30px; font-weight: bold;">⏳ กำลังโหลดข้อมูลจากระบบ...</div>
+        </div>
 
         <div class="btn-group">
             <a href="repair.html" class="btn btn-primary">🔧 ไปหน้าแจ้งซ่อม</a>
@@ -172,36 +174,53 @@
         let tickets = [];
         let currentTabFilter = 'ALL';
 
+        // 🔄 ดึงข้อมูลสดจาก Google Sheets (แก้ปัญหาเปิดเครื่องไหนก็เจอใบงาน)
         function loadTickets() {
-            let saved = localStorage.getItem('repairTickets');
-            tickets = saved ? JSON.parse(saved) : [];
-            updateTabCounts();
+            const fetchUrl = gasWebAppUrl + "?action=getTickets";
+            
+            fetch(fetchUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (Array.isArray(data) && data.length > 0) {
+                        tickets = data;
+                        localStorage.setItem('repairTickets', JSON.stringify(tickets));
+                    } else {
+                        let saved = localStorage.getItem('repairTickets');
+                        tickets = saved ? JSON.parse(saved) : [];
+                    }
+                    updateTabCounts();
+                    checkUrlParamAndFilter();
+                })
+                .catch(err => {
+                    console.log("Cloud fetch failed, using local storage:", err);
+                    let saved = localStorage.getItem('repairTickets');
+                    tickets = saved ? JSON.parse(saved) : [];
+                    updateTabCounts();
+                    checkUrlParamAndFilter();
+                });
         }
 
         window.addEventListener('DOMContentLoaded', () => {
             loadTickets();
+        });
+
+        function checkUrlParamAndFilter() {
             const urlParams = new URLSearchParams(window.location.search);
             const targetId = urlParams.get('id');
             if (targetId) {
-                // รอให้หน้าเว็บโหลดข้อมูลเสร็จก่อน ค่อยเอาเลขใบงานไปใส่ช่องค้นหาแล้วกดกรอง
                 setTimeout(() => {
                     const searchInput = document.getElementById('searchKeyword');
                     const tabAllBtn = document.getElementById('tabAll');
-                    
-                    // บังคับกดแท็บ "ทั้งหมด" ก่อนเพื่อให้เคลียร์ตัวกรองสถานะ
-                    if (tabAllBtn) {
-                        tabAllBtn.click();
-                    }
-                    
+                    if (tabAllBtn) tabAllBtn.click();
                     if (searchInput) {
-                        searchInput.value = targetId; // ใส่รหัสใบงาน เช่น GFF-0003 อัตโนมัติ
-                        filterTickets(); // สั่งกรองข้อมูลทันที
+                        searchInput.value = targetId;
+                        filterTickets();
                     }
-                }, 500); // หน่วงเวลา 0.5 วินาทีเพื่อให้ระบบดึงข้อมูลพร้อม
+                }, 300);
             } else {
                 filterTickets();
             }
-        });
+        }
 
         function updateTabCounts() {
             let pending = 0, progress = 0, waiting = 0, completed = 0, cancelled = 0;
@@ -256,11 +275,9 @@
                 localStorage.setItem('repairTickets', JSON.stringify(tickets));
                 filterTickets();
 
-                // ส่งคำสั่งอัปเดตสถานะไปที่ Google Sheets ทันที
                 var updateSheetUrl = gasWebAppUrl + "?action=updateStatus&id=" + encodeURIComponent(id) + "&status=" + encodeURIComponent("❌ ยกเลิกใบงาน (Cancelled)");
                 fetch(updateSheetUrl).catch(err => console.error("Sheet Update Error:", err));
 
-                // ส่งแจ้งเตือนเข้ากลุ่ม LINE
                 if (targetTicket) {
                     const msg = `❌ **[ยกเลิกใบงานซ่อม]**\n` +
                                 `----------------------------------\n` +
@@ -295,6 +312,8 @@
                             <div><strong>🔩 อะไหล่/รายการ:</strong> ${t.partsUsed ? t.partsUsed.map(p => `${p.name} (${p.qty} ชิ้น)`).join(', ') : '-'}</div>
                         </div>` : '';
 
+                    let pdfBtn = t.pdfUrl && t.pdfUrl !== '-' ? `<a href="${t.pdfUrl}" target="_blank" class="btn-status btn-print">📥 PDF ใบงาน</a>` : '';
+
                     html += `
                         <div class="ticket-item">
                             <div class="ticket-header">
@@ -303,8 +322,8 @@
                             </div>
                             <div class="info-grid">
                                 <div class="info-row">⏱️ เวลา: <span>${t.time}</span></div>
-                                <div class="info-row">👤 ผู้แจ้ง: <span>${t.reporter}</span></div>
-                                <div class="info-row">📍 โซน: <span>${t.zone} (${t.room})</span></div>
+                                <div class="info-row">👤 ผู้แจ้ง: <span>${t.reporter || '-'}</span></div>
+                                <div class="info-row">📍 โซน: <span>${t.zone || '-'}</span></div>
                                 <div class="info-row">⚙️ เครื่องจักร: <span>${t.machine}</span></div>
                             </div>
                             <div style="margin-top: 8px; font-size: 14px;">📝 อาการ: ${t.details}</div>
@@ -314,9 +333,10 @@
                                 <span style="font-size: 13px; color: #64748b;">จัดการ:</span>
                                 <div class="action-btns">
                                     <button class="btn-status btn-progress" onclick="updateStatus('${t.ticketId}', '🟡 กำลังดำเนินการซ่อม (In Progress)')">🟡 รับซ่อม</button>
-                                    <button class="btn-status btn-close-job" onclick="openCloseJobModal('${t.ticketId}')">📝 บันทึกผล/ปิดงาน</button>
+                                    <button class="btn-status btn-close-job" onclick="openCloseJobModal('${t.ticketId}')">📝 ปิดงาน</button>
+                                    ${pdfBtn}
                                     <button class="btn-status btn-print" onclick="printJobCard('${t.ticketId}')">🖨️ พิมพ์</button>
-                                    <button class="btn-status btn-cancel" onclick="cancelRepairOrder('${t.ticketId}')">❌ ยกเลิกใบงาน</button>
+                                    <button class="btn-status btn-cancel" onclick="cancelRepairOrder('${t.ticketId}')">❌ ยกเลิก</button>
                                     <button class="btn-status btn-delete" onclick="deleteTicket('${t.ticketId}')">🗑️ ลบ</button>
                                 </div>
                             </div>
@@ -341,11 +361,11 @@
                         <td style="padding: 6px; border: 1px solid #000;"><strong>⏱️ เวลาแจ้ง:</strong> ${t.time}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 6px; border: 1px solid #000;"><strong>👤 ผู้แจ้ง:</strong> ${t.reporter}</td>
+                        <td style="padding: 6px; border: 1px solid #000;"><strong>👤 ผู้แจ้ง:</strong> ${t.reporter || '-'}</td>
                         <td style="padding: 6px; border: 1px solid #000;"><strong>📌 สถานะ:</strong> ${t.status}</td>
                     </tr>
                     <tr>
-                        <td colspan="2" style="padding: 6px; border: 1px solid #000;"><strong>📍 โซน/ห้อง:</strong> ${t.zone} (${t.room})</td>
+                        <td colspan="2" style="padding: 6px; border: 1px solid #000;"><strong>📍 โซน:</strong> ${t.zone || '-'}</td>
                     </tr>
                     <tr>
                         <td colspan="2" style="padding: 6px; border: 1px solid #000;"><strong>⚙️ เครื่องจักร/อุปกรณ์:</strong> ${t.machine}</td>
@@ -443,7 +463,7 @@
         }
 
         function sendLineCompletionNotice(t) {
-            let partsText = t.partsUsed.length > 0 ? t.partsUsed.map(p => `• ${p.name}: ${p.qty} ชิ้น`).join('\n') : '- ไม่มี -';
+            let partsText = t.partsUsed && t.partsUsed.length > 0 ? t.partsUsed.map(p => `• ${p.name}: ${p.qty} ชิ้น`).join('\n') : '- ไม่มี -';
             const msg = `🟢 **[อัปเดตสถานะงานซ่อม]**\n` +
                         `----------------------------------\n` +
                         `🎫 **เลขที่ใบงาน:** ${t.ticketId}\n` +
@@ -481,19 +501,18 @@
         }
 
         function filterTickets() {
-            loadTickets();
             const keyword = document.getElementById('searchKeyword').value.toLowerCase();
             const dateQuery = document.getElementById('searchDate').value.trim();
 
             const filtered = tickets.filter(t => {
                 let matchKeyword = !keyword || 
-                    t.ticketId.toLowerCase().includes(keyword) ||
-                    t.reporter.toLowerCase().includes(keyword) ||
-                    t.machine.toLowerCase().includes(keyword) ||
-                    t.zone.toLowerCase().includes(keyword) ||
-                    t.details.toLowerCase().includes(keyword);
+                    String(t.ticketId).toLowerCase().includes(keyword) ||
+                    String(t.reporter || '').toLowerCase().includes(keyword) ||
+                    String(t.machine).toLowerCase().includes(keyword) ||
+                    String(t.zone || '').toLowerCase().includes(keyword) ||
+                    String(t.details).toLowerCase().includes(keyword);
 
-                let matchDate = dateQuery === "" || t.time.includes(dateQuery);
+                let matchDate = dateQuery === "" || String(t.time).includes(dateQuery);
 
                 let st = (t.status || "").toLowerCase();
                 let matchTab = true;
