@@ -262,10 +262,11 @@
         }
 
         function saveTicketData(tickets, ticketId, zone, room, reporter, machine, details, timeStr, imageUrl) {
+            const fullZone = zone + (room ? ` (${room})` : '');
+            
             const ticketData = {
                 ticketId: ticketId,
-                zone: zone,
-                room: room ? room : '-',
+                zone: fullZone,
                 reporter: reporter,
                 machine: machine,
                 details: details,
@@ -282,28 +283,24 @@
                 });
                 localStorage.setItem('repairTickets', JSON.stringify(cleanTickets));
             } catch (err) {
-                console.warn("LocalStorage full, clearing cache:", err);
-                try {
-                    localStorage.clear();
-                    localStorage.setItem('repairTickets', JSON.stringify([ticketData]));
-                } catch (e) {}
+                console.warn("LocalStorage full:", err);
             }
 
+            // ใช้การส่งข้อมูลแบบมาตรฐาน รองรับมือถือทุกรุ่นไม่ให้หลุด
             fetch(gasWebAppUrl, {
                 method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify({
                     action: "saveJob",
                     ticketId: ticketId,
                     time: timeStr,
                     reporter: reporter,
-                    zone: zone + (room ? ` (${room})` : ''),
+                    zone: fullZone,
                     machine: machine,
                     details: details,
                     image: imageUrl
                 })
-            }).catch(error => console.error("Sheet Save Error:", error));
+            }).catch(error => console.error("Cloud Save Error:", error));
 
             showLineToast(ticketId, machine);
 
