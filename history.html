@@ -195,6 +195,20 @@
         let tickets = [];
         let currentTabFilter = 'ALL';
 
+        // ฟังก์ชันแปลงรูปแบบวันที่ให้เป็นเวลาไทยที่กะทัดรัด (เช่น 29/10/2569 14:16 น.)
+        function formatThaiDateTime(dateString) {
+            if (!dateString) return '-';
+            let d = new Date(dateString);
+            if (isNaN(d.getTime())) return dateString; // ถ้าแปลงไม่ได้ ให้ใช้ค่าเดิม
+            
+            let day = String(d.getDate()).padStart(2, '0');
+            let month = String(d.getMonth() + 1).padStart(2, '0');
+            let year = d.getFullYear() + 543;
+            let time = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            
+            return `${day}/${month}/${year} ${time} น.`;
+        }
+
         function loadTickets() {
             const fetchUrl = gasWebAppUrl + "?action=getTickets";
             
@@ -359,7 +373,7 @@
                                 <div class="status-badge">${t.status || 'รอดำเนินการ'}</div>
                             </div>
                             <div class="info-grid">
-                                <div class="info-row">⏱️ เวลา: <span>${t.time || '-'}</span></div>
+                                <div class="info-row">⏱️ เวลา: <span>${formatThaiDateTime(t.time)}</span></div>
                                 <div class="info-row">👤 ผู้แจ้ง: <span>${t.reporter || '-'}</span></div>
                                 <div class="info-row">📍 โซน: <span>${t.zone || '-'}</span></div>
                                 <div class="info-row">⚙️ เครื่องจักร: <span>${t.machine || '-'}</span></div>
@@ -398,7 +412,7 @@
                 <table style="width:100%; border-collapse: collapse; margin-bottom: 15px;">
                     <tr>
                         <td style="padding: 6px; border: 1px solid #000;"><strong>🎫 เลขที่ใบงาน:</strong> ${t.ticketId}</td>
-                        <td style="padding: 6px; border: 1px solid #000;"><strong>⏱️ เวลาแจ้ง:</strong> ${t.time}</td>
+                        <td style="padding: 6px; border: 1px solid #000;"><strong>⏱️ เวลาแจ้ง:</strong> ${formatThaiDateTime(t.time)}</td>
                     </tr>
                     <tr>
                         <td style="padding: 6px; border: 1px solid #000;"><strong>👤 ผู้แจ้ง:</strong> ${t.reporter || '-'}</td>
@@ -568,8 +582,9 @@
                         `🎫 **เลขที่ใบงาน:** ${t.ticketId}\n` +
                         `⚙️ **เครื่องจักร:** ${t.machine}\n` +
                         `👨‍🔧 **ช่างผู้รับผิดชอบ:** ${t.techName}\n` +
-                        `🔍 **สาเหตุ:** ${t.rootCause}\n` +
+                        `🔍 **สาเหตุ:** ${t.rootCause || '-'}\n` +
                         `🔩 **อะไหล่:**\n${partsText}\n` +
+                        `📝 **หมายเหตุ:** ${t.techRemarks || '-'}\n` +
                         `📌 **สถานะล่าสุด:** ${t.status}\n` +
                         `----------------------------------`;
 
